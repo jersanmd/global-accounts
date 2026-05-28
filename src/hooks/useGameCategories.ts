@@ -12,7 +12,6 @@ export function useGameCategories() {
 
       if (error) throw error;
 
-      // Extract unique game names
       const games = [...new Set((data as { game: string }[]).map((d) => d.game))];
       return games.sort();
     },

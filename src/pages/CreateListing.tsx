@@ -5,11 +5,13 @@ import { supabase } from "@/lib/supabase";
 import { useGameCategories } from "@/hooks/useGameCategories";
 import { useListing } from "@/hooks/useListings";
 import { useQueryClient } from "@tanstack/react-query";
+import type { ListingType } from "@/lib/types";
 import {
   SUPPORTED_GAMES,
   SUPPORTED_PLATFORMS,
   MAX_SCREENSHOTS,
   MAX_SCREENSHOT_SIZE_MB,
+  LISTING_TYPE_LABELS,
 } from "@/lib/constants";
 import { AlertTriangle } from "lucide-react";
 
@@ -34,6 +36,7 @@ export function CreateListing() {
     price: "",
     inventory: "",
     riskRating: "medium" as "low" | "medium" | "high" | "critical",
+    listingType: "account" as ListingType,
   });
 
   const [files, setFiles] = useState<File[]>([]);
@@ -55,6 +58,7 @@ export function CreateListing() {
         price: String(existingListing.price_usd),
         inventory: existingListing.inventory_summary,
         riskRating: existingListing.risk_rating,
+        listingType: existingListing.listing_type ?? "account",
       });
       if (!isKnown) setCustomGame(existingListing.game);
       setExistingScreenshots(existingListing.screenshots_urls ?? []);
@@ -212,6 +216,7 @@ export function CreateListing() {
           inventory_summary: form.inventory,
           risk_rating: form.riskRating,
           screenshots_urls: allScreenshots,
+          listing_type: form.listingType,
         }).eq("id", editId);
         if (updateError) throw updateError;
       } else {
@@ -225,6 +230,7 @@ export function CreateListing() {
           inventory_summary: form.inventory,
           risk_rating: form.riskRating,
           screenshots_urls: allScreenshots,
+          listing_type: form.listingType,
           status: "active",
         });
         if (insertError) throw insertError;
@@ -356,6 +362,28 @@ export function CreateListing() {
             placeholder="e.g. Diamond 2, AR 60"
             required
           />
+        </div>
+
+        {/* Listing Type */}
+        <div>
+          <label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-gray-500">I'm selling</label>
+          <div className="grid grid-cols-2 gap-3">
+            {(["account", "in_game_items"] as ListingType[]).map(t => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setForm({ ...form, listingType: t })}
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-center transition-all ${
+                  form.listingType === t
+                    ? "border-primary bg-primary-light text-primary shadow-sm"
+                    : "border-gray-200 text-gray-500 hover:border-gray-300"
+                }`}
+              >
+                <span className="text-sm font-semibold">{LISTING_TYPE_LABELS[t]}</span>
+                <span className="text-[10px] opacity-70">{t === "account" ? "Full game account" : "Items, skins, currency"}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Price */}

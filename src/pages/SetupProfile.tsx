@@ -1,47 +1,85 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { Shield, User, MessageCircle, ShoppingCart, Banknote } from "lucide-react";
+import { User, MessageCircle, ShoppingCart, Banknote } from "lucide-react";
 
 export function SetupProfile() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
   const [discordId, setDiscordId] = useState("");
   const [role, setRole] = useState<"buyer" | "seller">("buyer");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // If profile already set up, redirect to dashboard
-  if (profile?.discord_username && profile?.role !== "buyer") {
-    navigate("/dashboard", { replace: true });
-    return null;
+  // Show spinner while auth is loading
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+      </div>
+    );
+  }
+
+  // Not logged in — shouldn't happen, but guard anyway
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Block disabled users
+  if (profile?.disabled) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-bold text-gray-900">Account Disabled</p>
+          <p className="mt-2 text-sm text-gray-500">Your account has been disabled. Contact support for assistance.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Already set up — skip onboarding
+  if (profile?.discord_username) {
+    const dashboard = profile?.role === "admin" ? "/admin" : profile?.role === "middleman" ? "/middleman" : "/dashboard";
+    return <Navigate to={dashboard} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setError("");
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          discord_username: displayName || null,
-          discord_id: discordId || null,
-          role,
-        })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
+      if (profile) {
+        // Update existing profile
+        const { error: updateError } = await (supabase.from("profiles") as any)
+          .update({
+            discord_username: displayName || null,
+            discord_id: discordId || null,
+            role,
+          })
+          .eq("id", user.id);
+        if (updateError) throw updateError;
+      } else {
+        // Profile doesn't exist (trigger may have failed) — insert it
+        const { error: insertError } = await (supabase.from("profiles") as any)
+          .insert({
+            id: user.id,
+            email: user.email,
+            discord_username: displayName || null,
+            discord_id: discordId || null,
+            role,
+          });
+        if (insertError) throw insertError;
+      }
       await refreshProfile();
       navigate("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -124,10 +162,10 @@ export function SetupProfile() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={saving}
             className="btn-shine w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50"
           >
-            {loading ? "Saving..." : "Complete Setup"}
+            {saving ? "Saving..." : "Complete Setup"}
           </button>
         </form>
 

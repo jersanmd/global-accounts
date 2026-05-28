@@ -21,8 +21,25 @@ export function ProtectedRoute({ requiredRole }: Props) {
     return <Navigate to="/login" replace />;
   }
 
+  // Redirect to onboarding if profile hasn't been set up
+  if (profile && !profile.discord_username) {
+    return <Navigate to="/setup-profile" replace />;
+  }
+
   if (profile && !requiredRole.includes(profile.role)) {
     return <Navigate to="/" replace />;
+  }
+
+  // Block disabled users
+  if (profile?.disabled) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-bold text-gray-900">Account Disabled</p>
+          <p className="mt-2 text-sm text-gray-500">Your account has been disabled. Contact support for assistance.</p>
+        </div>
+      </div>
+    );
   }
 
   return <Outlet />;

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Shield, Star, Clock, CheckCircle, Eye } from "lucide-react";
 import type { Listing } from "@/lib/types";
 import { formatUSD, timeAgo, getAvatarUrl } from "@/lib/utils";
-import { RISK_LABELS } from "@/lib/constants";
+import { RISK_LABELS, LISTING_TYPE_LABELS } from "@/lib/constants";
 import { isUserOnline } from "@/hooks/useOnlineStatus";
 import { useState } from "react";
 
@@ -69,12 +69,15 @@ export function ListingCard({ listing }: Props) {
 
         {/* Hover overlay */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all duration-500 group-hover:bg-black/40">
-          <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-5 py-2 text-xs font-semibold text-gray-900 opacity-0 shadow-xl transition-all duration-500 group-hover:opacity-100 scale-90 group-hover:scale-100">
+          <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-5 py-2 text-xs font-semibold text-gray-900 opacity-0 shadow-xl transition-all duration-500 group-hover:opacity-100 scale-90 group-hover:scale-100 dark:!bg-white dark:!text-gray-900">
             <Eye className="h-3.5 w-3.5" />View Details
           </span>
         </div>
 
         <span className="absolute bottom-3 left-3 rounded-lg bg-black/50 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">{listing.platform}</span>
+        {listing.listing_type && listing.listing_type !== "account" && (
+          <span className="absolute bottom-3 right-3 rounded-lg bg-primary/80 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">Items</span>
+        )}
       </div>
 
       {/* Body */}

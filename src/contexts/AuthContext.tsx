@@ -85,7 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    // Don't throw for already-registered users — they need to confirm their email
+    if (error && !error.message.toLowerCase().includes("already") && !error.message.toLowerCase().includes("not confirmed")) {
+      throw error;
+    }
   };
 
   const signOut = async () => {

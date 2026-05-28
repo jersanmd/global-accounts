@@ -1,4 +1,4 @@
-# 🌍 GlobalAccount
+# 🛡️ RaidStore
 
 A premium gaming account marketplace with middleman verification, escrow payments, and secure trading.
 
@@ -8,20 +8,35 @@ A premium gaming account marketplace with middleman verification, escrow payment
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
 [![TanStack Query](https://img.shields.io/badge/TanStack_Query-5-FF4154?logo=reactquery)](https://tanstack.com/query)
+[![Tests](https://img.shields.io/badge/Tests-86_passing-10B981?logo=vitest)](https://vitest.dev/)
 
 ## ✨ Features
 
+### Marketplace
 | Feature | Description |
 |---|---|
-| 🎮 **Account Listings** | Browse, search & filter gaming accounts across multiple platforms |
-| 🛡️ **Middleman System** | Verified middlemen witness account transfers for safe trading |
-| 💳 **Escrow Payments** | Funds held in escrow until transfer is verified |
-| 📸 **Image Upload** | Up to 15 screenshots per listing with clipboard paste support |
-| 🔍 **Dynamic Categories** | Game & platform filters populated from active listings |
-| 👤 **Seller Profiles** | Ratings, reviews, KYC verification, online status |
-| 💰 **Withdrawals** | GCash, Maya, PayPal payout methods for sellers |
-| 📊 **Dashboard** | Real-time stats, listing management with edit/delete |
-| 🌙 **Premium UI** | Dark navbar, gradient cards, lightbox viewer, responsive design |
+| 🎮 **Browse & Search** | Search by game, rank, inventory. Filter by platform, risk rating, price range |
+| 🛡️ **Middleman Verification** | Verified middlemen witness account transfers in private Discord channels |
+| 💳 **Escrow Payments** | Stripe-powered payments held in escrow until transfer is verified |
+| 📸 **Screenshots** | Up to 15 screenshots per listing with lightbox viewer |
+| 🏷️ **Dynamic Categories** | Game names auto-populate from existing listings |
+
+### User Dashboard
+| Feature | Description |
+|---|---|
+| 👤 **Buyer Dashboard** | Purchase showcase carousel, quick links, transaction history |
+| 💰 **Seller Dashboard** | 5-stat unified cards, filterable recent sales, earnings breakdown, listing management |
+| ⚖️ **Middleman Panel** | Active/History split, Discord channel creation, confirmation dialogs on all actions |
+| 🛡️ **Admin Panel** | User management, transaction editing, listing toggling, delete with RPC fallback |
+
+### Platform
+| Feature | Description |
+|---|---|
+| 🌙 **Dark Mode** | System-preference detection, localStorage persistence, global CSS overrides |
+| 📱 **Responsive** | Mobile-first design across all pages |
+| 🔔 **Notifications** | Real-time toast notifications for transaction status changes |
+| ⭐ **Reviews** | Star ratings and reviews for completed transactions |
+| 🧪 **Testing** | 86 unit tests across 6 files (Vitest + Testing Library) |
 
 ## 🛠️ Tech Stack
 
@@ -29,24 +44,17 @@ A premium gaming account marketplace with middleman verification, escrow payment
 - **State**: TanStack Query v5 (`staleTime: 0, refetchOnMount: true`)
 - **Routing**: React Router v7
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions, RLS)
+- **Payments**: Stripe integration via Edge Functions
 - **Icons**: Lucide React
-- **Forms**: Custom hooks with validation
+- **Testing**: Vitest, Testing Library, jsdom
 
 ## 🚀 Getting Started
 
 ```bash
-# Clone
-git clone https://github.com/jersanmd/global-accounts.git
-cd global-accounts
-
-# Install
+git clone https://github.com/jersanmd/raidstore.git
+cd raidstore
 npm install
-
-# Set up environment
-cp .env.example .env
-# Fill in your Supabase URL + anon key
-
-# Run
+cp .env.example .env  # Add Supabase URL + anon key + Stripe keys
 npm run dev
 ```
 
@@ -55,9 +63,17 @@ npm run dev
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
 
-### Supabase Setup
+### Scripts
+
+```bash
+npm run dev      # Start dev server
+npm run build    # Production build
+npm test         # Run 86 unit tests
+npm run preview  # Preview production build
+```
 
 Run the migrations in `supabase/migrations/` in order:
 1. `00001_initial_schema.sql` — Tables, RLS policies, triggers

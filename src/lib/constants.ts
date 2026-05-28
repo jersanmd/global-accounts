@@ -42,6 +42,11 @@ export const RISK_LABELS: Record<RiskRating, string> = {
   critical: "Critical",
 };
 
+export const LISTING_TYPE_LABELS: Record<string, string> = {
+  account: "Account",
+  in_game_items: "In-Game Items",
+};
+
 export const RISK_COLORS: Record<RiskRating, string> = {
   low: "bg-green-100 text-green-800",
   medium: "bg-yellow-100 text-yellow-800",
@@ -80,3 +85,9 @@ export const STRIPE_PUBLISHABLE_KEY = import.meta.env
 export const SCREENSHOTS_BUCKET = "listing-screenshots";
 export const MAX_SCREENSHOTS = 15;
 export const MAX_SCREENSHOT_SIZE_MB = 5;
+
+// ─── Contact & Links ───
+export const SUPPORT_EMAIL = "support@raidstore.gg";
+export const PRIVACY_EMAIL = "privacy@raidstore.com";
+export const DISCORD_SERVER_URL = "https://discord.gg/raidstore";
+export const DISCORD_BOT_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/discord-bot/create-channel`;

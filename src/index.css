@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #f47521;
   --color-primary-dark: #d45f10;
@@ -62,6 +64,14 @@
   90% { opacity: 1; }
   100% { transform: translateY(-140px) translateX(50px); opacity: 0; }
 }
+@keyframes bar-fill {
+  from { width: 0%; }
+  to { width: var(--bar-width); }
+}
+@keyframes bar-fill-h {
+  from { height: 0%; }
+  to { height: var(--bar-height); }
+}
 
 /* ═══════════ UTILITIES ═══════════ */
 
@@ -70,6 +80,8 @@
 .animate-scale-in { animation: scale-in 0.5s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-float { animation: float 4s ease-in-out infinite; }
 .animate-pulse-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-bar-fill { animation: bar-fill 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
+.animate-bar-fill-h { animation: bar-fill-h 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
 
 .delay-75 { animation-delay: 0.075s; }
 .delay-100 { animation-delay: 0.1s; }
@@ -79,6 +91,8 @@
 .delay-400 { animation-delay: 0.4s; }
 .delay-500 { animation-delay: 0.5s; }
 .delay-700 { animation-delay: 0.7s; }
+.delay-1000 { animation-delay: 1s; }
+.delay-1200 { animation-delay: 1.2s; }
 
 .category-scroll::-webkit-scrollbar { height: 0; }
 .category-scroll { -ms-overflow-style: none; scrollbar-width: none; }
@@ -96,6 +110,95 @@
   transform: translateY(-6px);
   border-color: rgba(244,117,33,0.2);
   box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(244,117,33,0.08);
+}
+
+/* ═══════════ DARK MODE ═══════════ */
+
+.dark body {
+  @apply bg-dark text-white;
+}
+
+/* ── Global background overrides ── */
+.dark .bg-white { background-color: #16171b; }
+.dark .bg-surface { background-color: #0a0a0b; }
+.dark .bg-gray-50 { background-color: rgba(255,255,255,0.03); }
+.dark .bg-gray-100 { background-color: rgba(255,255,255,0.05); }
+.dark .bg-red-50 { background-color: rgba(239,68,68,0.1); }
+.dark .bg-green-50 { background-color: rgba(34,197,94,0.1); }
+.dark .bg-amber-50 { background-color: rgba(245,158,11,0.1); }
+.dark .bg-blue-50 { background-color: rgba(59,130,246,0.1); }
+.dark .bg-orange-50 { background-color: rgba(249,115,22,0.1); }
+.dark .bg-purple-50 { background-color: rgba(168,85,247,0.1); }
+.dark .bg-primary-light { background-color: rgba(244,117,33,0.1); }
+.dark .bg-red-100 { background-color: rgba(239,68,68,0.15); }
+.dark .bg-green-100 { background-color: rgba(34,197,94,0.15); }
+.dark .bg-amber-100 { background-color: rgba(245,158,11,0.15); }
+.dark .bg-blue-100 { background-color: rgba(59,130,246,0.15); }
+.dark .bg-purple-100 { background-color: rgba(168,85,247,0.15); }
+
+/* ── Border overrides ── */
+.dark .border-gray-100 { border-color: rgba(255,255,255,0.06); }
+.dark .border-gray-200 { border-color: rgba(255,255,255,0.08); }
+.dark .border-border { border-color: rgba(255,255,255,0.08); }
+.dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(255,255,255,0.05); }
+.dark .border-green-200 { border-color: rgba(34,197,94,0.2); }
+.dark .border-blue-200 { border-color: rgba(59,130,246,0.2); }
+.dark .border-amber-200 { border-color: rgba(245,158,11,0.2); }
+.dark .border-red-200 { border-color: rgba(239,68,68,0.2); }
+
+/* ── Text overrides ── */
+.dark .text-gray-900 { color: #f5f5f5; }
+.dark .text-gray-800 { color: #e5e5e5; }
+.dark .text-gray-700 { color: #d4d4d4; }
+.dark .text-gray-600 { color: #a3a3a3; }
+.dark .text-gray-500 { color: #737373; }
+.dark .text-gray-400 { color: #525252; }
+.dark .text-green-900 { color: #bbf7d0; }
+.dark .text-green-800 { color: #bbf7d0; }
+.dark .text-green-700 { color: #86efac; }
+.dark .text-green-600 { color: #4ade80; }
+.dark .text-blue-900 { color: #bfdbfe; }
+.dark .text-blue-800 { color: #bfdbfe; }
+.dark .text-blue-700 { color: #93c5fd; }
+.dark .text-amber-900 { color: #fde68a; }
+.dark .text-amber-800 { color: #fde68a; }
+.dark .text-amber-700 { color: #fcd34d; }
+.dark .text-red-900 { color: #fecaca; }
+.dark .text-red-800 { color: #fecaca; }
+.dark .text-red-700 { color: #fca5a5; }
+
+/* ── Shadow overrides ── */
+.dark .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.dark .shadow-md { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.dark .shadow-xl { box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.dark .shadow-2xl { box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
+.dark .shadow-gray-200\/50 { box-shadow: none; }
+
+/* ── Hover overrides ── */
+.dark .hover\:bg-gray-50:hover { background-color: rgba(255,255,255,0.05); }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.08); }
+
+/* ── Shimmer skeleton ── */
+.dark .shimmer-skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+}
+
+/* ── Prose dark mode ── */
+.dark .prose { color: #d4d4d4; }
+.dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4 { color: #f5f5f5; }
+.dark .prose strong { color: #e5e5e5; }
+.dark .prose a { color: #f47521; }
+.dark .prose code { background-color: rgba(255,255,255,0.1); color: #e5e5e5; }
+.dark .prose li::marker { color: #737373; }
+
+.dark .premium-card {
+  background: #16171b;
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.15);
+}
+.dark .premium-card:hover {
+  border-color: rgba(244,117,33,0.25);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 12px 24px rgba(0,0,0,0.25), 0 0 0 1px rgba(244,117,33,0.12);
 }
 
 /* ═══════════ GLASS CARD ═══════════ */

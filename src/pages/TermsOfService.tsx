@@ -21,9 +21,9 @@ export function TermsOfService() {
               <FileText className="h-5 w-5 text-primary" />
               <h2 className="text-base font-bold text-gray-900">Overview</h2>
             </div>
-            <p>Welcome to <strong>GlobalAccount</strong> ("Platform," "Company," "we," "us," or "our"). These Terms of Service ("Terms") constitute a legally binding agreement between you ("User," "you," or "your") and GlobalAccount governing your access to and use of our website, services, and platform located at globalaccount.com (collectively, the "Services").</p>
+            <p>Welcome to <strong>RaidStore</strong> ("Platform," "Company," "we," "us," or "our"). These Terms of Service ("Terms") constitute a legally binding agreement between you ("User," "you," or "your") and RaidStore governing your access to and use of our website, services, and platform located at raidstore.com (collectively, the "Services").</p>
             <p className="mt-2">By creating an account, accessing, or using our Services in any manner, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree with any provision of these Terms, you must immediately discontinue use of our Services.</p>
-            <p className="mt-2">GlobalAccount operates as a <strong>secure marketplace intermediary</strong> facilitating the sale and purchase of gaming accounts between verified buyers and sellers. We provide escrow payment protection, live middleman verification, and identity verification services to ensure safe transactions. We are not a party to the sale contract between buyer and seller.</p>
+            <p className="mt-2">RaidStore operates as a <strong>secure marketplace intermediary</strong> facilitating the sale and purchase of gaming accounts between verified buyers and sellers. We provide escrow payment protection, live middleman verification, and identity verification services to ensure safe transactions. We are not a party to the sale contract between buyer and seller.</p>
           </div>
 
           {/* 1. Eligibility */}
@@ -46,7 +46,7 @@ export function TermsOfService() {
             <ul className="mt-2 list-disc space-y-2 pl-6">
               <li>Maintaining the <strong>confidentiality</strong> of your login credentials, password, and authentication methods.</li>
               <li>All activities, transactions, and communications that occur under your account, whether authorized by you or not.</li>
-              <li><strong>Immediately notifying us</strong> at support@globalaccount.com of any unauthorized access, suspected security breach, or compromise of your account.</li>
+              <li><strong>Immediately notifying us</strong> at support@raidstore.com of any unauthorized access, suspected security breach, or compromise of your account.</li>
             </ul>
             <p className="mt-3">We implement industry-standard security measures including <strong>bcrypt password hashing, TLS 1.3 encryption in transit, and Row-Level Security (RLS)</strong> on all database tables. However, no security system is impenetrable. You should use a strong, unique password and enable any additional security features we may offer.</p>
           </section>
@@ -54,14 +54,14 @@ export function TermsOfService() {
           {/* 3. Seller Obligations */}
           <section>
             <h2 className="text-lg font-bold text-gray-900">3. Seller Obligations & Representations</h2>
-            <p>As a seller listing gaming accounts on GlobalAccount, you covenant and agree to:</p>
+            <p>As a seller listing gaming accounts on RaidStore, you covenant and agree to:</p>
             <ul className="mt-2 list-disc space-y-2 pl-6">
               <li><strong>Legal Ownership:</strong> You are the sole, lawful owner of every account you list and possess the unrestricted right to transfer ownership. Stolen, hacked, cracked, or fraudulently obtained accounts are strictly prohibited.</li>
               <li><strong>Accurate Descriptions:</strong> All listing information — including game, platform, rank, inventory contents, and risk factors — must be complete and accurate. IGNs must never be disclosed in public listings.</li>
               <li><strong>Live Demo Participation:</strong> You must participate in the live screen-share demonstration via Discord with the assigned middleman. You agree to answer verification questions honestly.</li>
               <li><strong>Secure Credential Transfer:</strong> Account credentials shall only be shared through the designated secure process supervised by the middleman. Never share credentials outside of witnessed sessions.</li>
               <li><strong>KYC Verification:</strong> Prior to receiving any payout, you must complete the Know Your Customer (KYC) process including government-issued ID, selfie verification, and proof of address. This data is processed by our certified KYC partner and encrypted at rest.</li>
-              <li><strong>No Off-Platform Dealing:</strong> You shall not solicit, communicate with, or transact with buyers outside of the GlobalAccount platform. Off-platform transactions bypass our escrow protection and middleman verification — they are strictly prohibited.</li>
+              <li><strong>No Off-Platform Dealing:</strong> You shall not solicit, communicate with, or transact with buyers outside of the RaidStore platform. Off-platform transactions bypass our escrow protection and middleman verification — they are strictly prohibited.</li>
               <li><strong>Post-Transfer Support:</strong> You agree to assist the buyer with any reasonable transition questions for 24 hours after transfer completion.</li>
             </ul>
             <div className="mt-3 rounded-lg bg-primary-light p-3">
@@ -73,7 +73,7 @@ export function TermsOfService() {
           {/* 4. Buyer Obligations */}
           <section>
             <h2 className="text-lg font-bold text-gray-900">4. Buyer Obligations & Protections</h2>
-            <p>As a buyer on GlobalAccount, you agree to:</p>
+            <p>As a buyer on RaidStore, you agree to:</p>
             <ul className="mt-2 list-disc space-y-2 pl-6">
               <li><strong>Full Payment:</strong> Pay the listing price plus a <strong>3% buyer service fee</strong> in full via our secure Stripe payment gateway. Funds are held in escrow — the seller does not receive payment until you confirm satisfaction.</li>
               <li><strong>Demo Participation:</strong> Attend the live Discord demo session. Review the account thoroughly. Approve or reject the demo through the transaction page in your dashboard.</li>
@@ -90,22 +90,22 @@ export function TermsOfService() {
           {/* 5. Middleman Service */}
           <section>
             <h2 className="text-lg font-bold text-gray-900">5. Middleman Service & Verification</h2>
-            <p>GlobalAccount's middleman service is the cornerstone of our security model:</p>
+            <p>RaidStore's middleman service is the cornerstone of our security model:</p>
             <ul className="mt-2 list-disc space-y-2 pl-6">
-              <li>All middlemen are <strong>vetted, trained, and background-checked</strong> by GlobalAccount before being added to the assignment queue.</li>
+              <li>All middlemen are <strong>vetted, trained, and background-checked</strong> by RaidStore before being added to the assignment queue.</li>
               <li>Middlemen are assigned via an automated <strong>round-robin system</strong> to ensure fair distribution and prevent collusion.</li>
               <li>The middleman's role is to <strong>verify, witness, and document</strong> every stage of the transaction — they do not take possession of any account credentials or funds.</li>
               <li>Middlemen create <strong>temporary, private Discord channels</strong> for each transaction. Channel contents are archived for dispute resolution purposes and deleted after 30 days.</li>
-              <li>GlobalAccount reserves the right to reassign or replace middlemen at any time. Middleman decisions regarding demo verification and transfer witnessing are final.</li>
+              <li>RaidStore reserves the right to reassign or replace middlemen at any time. Middleman decisions regarding demo verification and transfer witnessing are final.</li>
             </ul>
           </section>
 
           {/* 6. Escrow & Payment Processing */}
           <section>
             <h2 className="text-lg font-bold text-gray-900">6. Escrow & Payment Processing</h2>
-            <p>All payments on GlobalAccount are processed through <strong>Stripe Connect</strong>, a PCI DSS Level 1 certified payment processor — the highest level of security certification in the payments industry.</p>
+            <p>All payments on RaidStore are processed through <strong>Stripe Connect</strong>, a PCI DSS Level 1 certified payment processor — the highest level of security certification in the payments industry.</p>
             <ul className="mt-2 list-disc space-y-2 pl-6">
-              <li><strong>Escrow Protection:</strong> Buyer payments are placed in a segregated escrow account. Neither GlobalAccount nor the seller can access these funds until the transaction is verified as complete.</li>
+              <li><strong>Escrow Protection:</strong> Buyer payments are placed in a segregated escrow account. Neither RaidStore nor the seller can access these funds until the transaction is verified as complete.</li>
               <li><strong>Payment Capture:</strong> We use Stripe's manual capture method — funds are authorized at purchase but only captured upon buyer confirmation of successful delivery.</li>
               <li><strong>Payout Schedule:</strong> Seller payouts (listing price minus 8% fee) are released after all three conditions are met: demo approved, transfer witnessed, funds released by middleman.</li>
               <li><strong>Currency:</strong> All transactions are denominated in United States Dollars (USD). Currency conversion fees, if applicable, are the responsibility of the paying party.</li>
@@ -141,7 +141,7 @@ export function TermsOfService() {
                 <li>Using automated scripts, bots, scrapers, or data mining tools</li>
                 <li>Posting false, misleading, or deceptive information in listings</li>
                 <li>Engaging in money laundering, terrorist financing, or any illegal financial activity</li>
-                <li>Violating any game publisher's Terms of Service in a manner that could subject GlobalAccount to liability</li>
+                <li>Violating any game publisher's Terms of Service in a manner that could subject RaidStore to liability</li>
                 <li>Creating multiple accounts, engaging in review manipulation, or feedback fraud</li>
                 <li>Reverse-engineering, decompiling, or extracting our platform's source code</li>
               </ul>
@@ -151,8 +151,8 @@ export function TermsOfService() {
           {/* 9. Intellectual Property */}
           <section>
             <h2 className="text-lg font-bold text-gray-900">9. Intellectual Property</h2>
-            <p>All game titles, characters, logos, and trademarks displayed on our platform are the property of their respective owners. GlobalAccount is an independent marketplace and is <strong>not affiliated with, endorsed by, or sponsored by</strong> any game developer or publisher unless explicitly stated.</p>
-            <p className="mt-2">The GlobalAccount platform, including its code, design, branding, and proprietary technology, is protected by copyright and intellectual property laws. You may not copy, modify, distribute, or create derivative works from any portion of our platform without express written permission.</p>
+            <p>All game titles, characters, logos, and trademarks displayed on our platform are the property of their respective owners. RaidStore is an independent marketplace and is <strong>not affiliated with, endorsed by, or sponsored by</strong> any game developer or publisher unless explicitly stated.</p>
+            <p className="mt-2">The RaidStore platform, including its code, design, branding, and proprietary technology, is protected by copyright and intellectual property laws. You may not copy, modify, distribute, or create derivative works from any portion of our platform without express written permission.</p>
           </section>
 
           {/* 10. Limitation of Liability */}
@@ -160,10 +160,10 @@ export function TermsOfService() {
             <h2 className="text-lg font-bold text-gray-900">10. Limitation of Liability</h2>
             <p>To the maximum extent permitted by applicable law:</p>
             <ul className="mt-2 list-disc space-y-2 pl-6">
-              <li>GlobalAccount provides the platform on an <strong>"as is" and "as available"</strong> basis without warranties of any kind, express or implied.</li>
+              <li>RaidStore provides the platform on an <strong>"as is" and "as available"</strong> basis without warranties of any kind, express or implied.</li>
               <li>We are not liable for indirect, incidental, consequential, special, or punitive damages arising from your use of the platform.</li>
-              <li>Our maximum aggregate liability for any claim shall not exceed the <strong>platform fees collected by GlobalAccount</strong> for the specific transaction giving rise to the claim.</li>
-              <li>GlobalAccount is not responsible for accounts that are banned, suspended, or modified by game developers or publishers after transfer.</li>
+              <li>Our maximum aggregate liability for any claim shall not exceed the <strong>platform fees collected by RaidStore</strong> for the specific transaction giving rise to the claim.</li>
+              <li>RaidStore is not responsible for accounts that are banned, suspended, or modified by game developers or publishers after transfer.</li>
               <li>We are not liable for losses arising from events beyond our reasonable control, including but not limited to: natural disasters, internet outages, third-party service failures, or government action.</li>
             </ul>
           </section>
@@ -204,7 +204,7 @@ export function TermsOfService() {
           {/* 14. Governing Law */}
           <section>
             <h2 className="text-lg font-bold text-gray-900">14. Governing Law & Jurisdiction</h2>
-            <p>These Terms shall be governed by and construed in accordance with the laws applicable to the jurisdiction in which GlobalAccount is incorporated. Any legal action arising from these Terms shall be brought exclusively in the competent courts of that jurisdiction.</p>
+            <p>These Terms shall be governed by and construed in accordance with the laws applicable to the jurisdiction in which RaidStore is incorporated. Any legal action arising from these Terms shall be brought exclusively in the competent courts of that jurisdiction.</p>
           </section>
 
           {/* 15. Contact */}
@@ -215,8 +215,8 @@ export function TermsOfService() {
             </div>
             <p>For questions, concerns, or legal notices regarding these Terms of Service, contact us at:</p>
             <ul className="mt-2 space-y-1">
-              <li><strong>Email:</strong> support@globalaccount.com</li>
-              <li><strong>Legal:</strong> legal@globalaccount.com</li>
+              <li><strong>Email:</strong> support@raidstore.com</li>
+              <li><strong>Legal:</strong> legal@raidstore.com</li>
             </ul>
           </div>
 

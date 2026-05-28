@@ -1,8 +1,8 @@
-// Supabase project configuration
-// Run `supabase init` and `supabase link` to connect to your project
+# Supabase project configuration
+# Run `supabase init` and `supabase link` to connect to your project
 
-[functions.create-payment-intent]
-[functions.handle-payment-success]
-[functions.create-discord-channel]
-[functions.release-escrow]
-[functions.refund-transaction]
+[functions.discord-bot]
+enabled = true
+
+[functions.discord-notify]
+enabled = true

@@ -1,5 +1,6 @@
 import { Shield, Lock, Server, Eye, FileCheck, Database, Globe, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PRIVACY_EMAIL } from "@/lib/constants";
 
 export function PrivacyPolicy() {
   return (
@@ -22,7 +23,7 @@ export function PrivacyPolicy() {
               <h2 className="text-base font-bold text-green-900">Our Commitment to Your Privacy</h2>
             </div>
             <p className="text-green-800">
-              At GlobalAccount, protecting your personal information is fundamental to our business. We have designed our platform with privacy and security as core architectural principles — not afterthoughts. We employ bank-grade encryption, strict access controls, and industry-best practices to ensure your data remains confidential, integral, and available only to those you authorize.
+              At RaidStore, protecting your personal information is fundamental to our business. We have designed our platform with privacy and security as core architectural principles — not afterthoughts. We employ bank-grade encryption, strict access controls, and industry-best practices to ensure your data remains confidential, integral, and available only to those you authorize.
             </p>
             <p className="mt-2 text-green-800">
               This Privacy Policy provides a comprehensive explanation of what data we collect, why we collect it, how we protect it, and what rights you have over it. We encourage you to read this document in its entirety.
@@ -33,10 +34,10 @@ export function PrivacyPolicy() {
           <section>
             <h2 className="text-lg font-bold text-gray-900">1. Who We Are (Data Controller)</h2>
             <p>
-              GlobalAccount ("Company," "we," "us," "our") operates the marketplace platform at globalaccount.com. We act as the <strong>data controller</strong> for personal information collected through our Services. This means we determine the purposes and means of processing your personal data.
+              RaidStore ("Company," "we," "us," "our") operates the marketplace platform at raidstore.com. We act as the <strong>data controller</strong> for personal information collected through our Services. This means we determine the purposes and means of processing your personal data.
             </p>
             <p className="mt-2">
-              For privacy-related inquiries, contact our Data Protection Officer at: <strong>privacy@globalaccount.com</strong>
+              For privacy-related inquiries, contact our Data Protection Officer at: <strong>{PRIVACY_EMAIL}</strong>
             </p>
           </section>
 
@@ -247,7 +248,7 @@ export function PrivacyPolicy() {
                 </div>
               ))}
             </div>
-            <p className="mt-4">To exercise any of these rights, email <strong>privacy@globalaccount.com</strong>. We will respond within 30 days. We may require identity verification before processing your request.</p>
+            <p className="mt-4">To exercise any of these rights, email <strong>{PRIVACY_EMAIL}</strong>. We will respond within 30 days. We may require identity verification before processing your request.</p>
           </section>
 
           {/* 8. Cookies */}
@@ -276,7 +277,7 @@ export function PrivacyPolicy() {
           {/* 10. Children */}
           <section>
             <h2 className="text-lg font-bold text-gray-900">10. Children's Privacy</h2>
-            <p>Our Services are not directed to individuals under the age of 18. We do not knowingly collect personal information from children. If you are a parent or guardian and believe your child has provided us with personal data, please contact us immediately at privacy@globalaccount.com. Upon verification, we will promptly delete such information.</p>
+            <p>Our Services are not directed to individuals under the age of 18. We do not knowingly collect personal information from children. If you are a parent or guardian and believe your child has provided us with personal data, please contact us immediately at {PRIVACY_EMAIL}. Upon verification, we will promptly delete such information.</p>
           </section>
 
           {/* 11. Changes */}
@@ -293,8 +294,8 @@ export function PrivacyPolicy() {
             </div>
             <p className="text-green-800">If you have questions about this Privacy Policy, wish to exercise your data rights, or need to report a privacy concern:</p>
             <ul className="mt-2 space-y-1 text-green-800">
-              <li><strong>Data Protection Officer:</strong> dpo@globalaccount.com</li>
-              <li><strong>General Privacy:</strong> privacy@globalaccount.com</li>
+              <li><strong>Data Protection Officer:</strong> dpo@raidstore.com</li>
+              <li><strong>General Privacy:</strong> {PRIVACY_EMAIL}</li>
               <li><strong>Response Time:</strong> We aim to acknowledge all inquiries within 48 hours and resolve them within 30 days.</li>
             </ul>
           </div>

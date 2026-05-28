@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { getAvatarUrl } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Shield, User, MessageCircle, Save, Camera, ShieldCheck, Clock, XCircle, AlertTriangle, CheckCircle, Mail, Calendar, Star, Wallet, ArrowDownToLine, Smartphone, DollarSign, CircleDollarSign } from "lucide-react";
 import { useReviews } from "@/hooks/useReviews";
 import { formatUSD } from "@/lib/utils";
+import type { Profile as ProfileType } from "@/lib/types";
 
 const KYC_INFO: Record<string, { icon: typeof ShieldCheck; label: string; color: string; bg: string }> = {
   not_verified: { icon: AlertTriangle, label: "Not Verified", color: "text-gray-500", bg: "bg-gray-100" },
@@ -16,7 +17,23 @@ const KYC_INFO: Record<string, { icon: typeof ShieldCheck; label: string; color:
 };
 
 export function Profile() {
-  const { user, profile, refreshProfile, signOut } = useAuth();
+  const { userId } = useParams<{ userId?: string }>();
+  const { user, profile: ownProfile, refreshProfile, signOut } = useAuth();
+  const isViewingOther = !!userId && userId !== user?.id && ownProfile?.role === "admin";
+
+  // Fetch viewed user profile (admin only)
+  const { data: viewedProfile, isLoading: viewingLoading } = useQuery({
+    queryKey: ["viewed-profile", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+      return data as ProfileType | null;
+    },
+    enabled: isViewingOther,
+  });
+
+  // Use viewed profile when admin is viewing another user
+  const profile = isViewingOther ? viewedProfile : ownProfile;
   const [displayName, setDisplayName] = useState(profile?.discord_username ?? "");
   const [discordId, setDiscordId] = useState(profile?.discord_id ?? "");
   const [birthDate, setBirthDate] = useState(profile?.birth_date?.split("T")[0] ?? "");
@@ -40,7 +57,7 @@ export function Profile() {
       if (!user?.id) return 0;
       const [{ count: buyerCount }, { count: sellerCount }] = await Promise.all([
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("buyer_id", user.id).eq("status", "completed"),
-        supabase.from("transactions").select("*, listing:listings!inner(seller_id)", { count: "exact", head: true }).eq("listing.seller_id", user.id).eq("status", "completed"),
+        supabase.from("transactions").select("*", { count: "exact", head: true }).eq("status", "completed").eq("listing.seller_id", user.id),
       ]);
       return (buyerCount ?? 0) + (sellerCount ?? 0);
     },
@@ -53,23 +70,25 @@ export function Profile() {
     queryKey: ["profile-earnings", user?.id],
     queryFn: async () => {
       if (!user?.id) return { total: 0, withdrawn: 0, pending: 0 };
-      const { data } = await supabase
-        .from("transactions")
-        .select("amount_usd, funds_released, status")
-        .or(`buyer_id.eq.${user.id},listing.seller_id.eq.${user.id}`);
-      const txns = (data ?? []) as { amount_usd: number; funds_released: boolean; status: string }[];
-      const sellerTxns = txns.filter(t => t.status === "completed");
-      const total = sellerTxns.reduce((s, t) => s + t.amount_usd, 0);
-      const withdrawn = sellerTxns.filter(t => t.funds_released).reduce((s, t) => s + t.amount_usd, 0);
+      // Get completed transactions where user is buyer or seller
+      const [{ data: buyerData }, { data: sellerData }] = await Promise.all([
+        supabase.from("transactions").select("amount_usd, funds_released, status").eq("buyer_id", user.id).eq("status", "completed"),
+        supabase.from("transactions").select("amount_usd, funds_released, status").eq("status", "completed").eq("listing.seller_id", user.id),
+      ]);
+      const txns = [...(buyerData ?? []), ...(sellerData ?? [])] as { amount_usd: number; funds_released: boolean }[];
+      const total = txns.reduce((s, t) => s + t.amount_usd, 0);
+      const withdrawn = txns.filter(t => t.funds_released).reduce((s, t) => s + t.amount_usd, 0);
       return { total, withdrawn, pending: total - withdrawn };
     },
     enabled: !!user,
     staleTime: 30_000,
   });
 
-  if (!user || !profile) return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-3 border-primary border-t-transparent" /></div>;
+  if (!user || !ownProfile) return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-3 border-primary border-t-transparent" /></div>;
+  if (viewingLoading) return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-3 border-primary border-t-transparent" /></div>;
+  if (isViewingOther && !viewedProfile) return <div className="flex h-64 items-center justify-center text-gray-400">User not found.</div>;
 
-  const kyc = KYC_INFO[profile.kyc_status] ?? KYC_INFO.not_verified;
+  const kyc = KYC_INFO[profile?.kyc_status ?? "not_verified"];
   const KycIcon = kyc.icon;
 
   const handleSave = async () => {
@@ -116,11 +135,18 @@ export function Profile() {
     finally { setKycLoading(false); }
   };
 
+  const backTo = profile?.role === "middleman" ? "/middleman" : isViewingOther ? "/admin" : "/dashboard";
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex items-center gap-3">
-        <Link to="/dashboard" className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"><Shield className="h-5 w-5" /></Link>
-        <div><h1 className="text-2xl font-extrabold tracking-tight text-gray-900">My Profile</h1><p className="text-sm text-gray-500">Manage your account & identity</p></div>
+        <Link to={backTo} className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"><Shield className="h-5 w-5" /></Link>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+            {isViewingOther ? profile?.email?.split("@")[0] ?? "User" : "My Profile"}
+          </h1>
+          <p className="text-sm text-gray-500">{isViewingOther ? "Admin view" : "Manage your account & identity"}</p>
+        </div>
         {saved && <span className="ml-auto rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 animate-fade-in">✓ Saved</span>}
       </div>
 
@@ -133,10 +159,12 @@ export function Profile() {
             <div className="relative mx-auto mb-4 w-fit group">
               <img src={getAvatarUrl(user.email, profile.avatar_url, 120)} alt="" className="h-24 w-24 rounded-2xl ring-2 ring-white shadow-md object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-black/0 transition-all group-hover:bg-black/40">
-                <Camera className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
-                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
-              </label>
+              {!isViewingOther && (
+                <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-black/0 transition-all group-hover:bg-black/40">
+                  <Camera className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
+                </label>
+              )}
               {uploading && <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40"><div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" /></div>}
             </div>
             <h2 className="text-lg font-bold text-gray-900">{profile.discord_username || profile.email?.split("@")[0]}</h2>
@@ -227,7 +255,7 @@ export function Profile() {
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm font-bold text-gray-900">Account Information</h3>
-              {!editing ? (
+              {!editing && !isViewingOther ? (
                 <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
                   <User className="h-3.5 w-3.5" />Edit
                 </button>
@@ -424,11 +452,13 @@ export function Profile() {
             </>
           )}
 
-          {/* Sign Out */}
-          <button onClick={() => signOut()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-600 transition-all hover:bg-red-50">
-            Sign Out
-          </button>
+          {/* Sign Out — only for own profile */}
+          {!isViewingOther && (
+            <button onClick={() => signOut()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-600 transition-all hover:bg-red-50">
+              Sign Out
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -4,8 +4,9 @@ import { usePlatforms } from "@/hooks/usePlatforms";
 import { ListingCard } from "@/components/ListingCard";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useState, useEffect, useRef, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Search, Shield, ShieldCheck, Users, Headphones, TrendingUp, X, Monitor, Smartphone, Gamepad, Tv, Laptop } from "lucide-react";
-import { RISK_LABELS } from "@/lib/constants";
+import { RISK_LABELS, SUPPORT_EMAIL, DISCORD_SERVER_URL } from "@/lib/constants";
 import { useSearchContext } from "@/contexts/SearchContext";
 import type { RiskRating } from "@/lib/types";
 
@@ -122,7 +123,7 @@ export function BrowseListings() {
   return (
     <div>
       {/* ═══════ HERO ═══════ */}
-      <section className="hero-noise relative overflow-hidden bg-dark px-4 pb-20 pt-16 md:pb-24 md:pt-20">
+      <section className="hero-noise relative overflow-hidden bg-dark px-4 pb-16 pt-12 md:pb-20 md:pt-16">
         {/* Subtle dot grid overlay */}
         <div className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -134,43 +135,43 @@ export function BrowseListings() {
         <div className="hero-particle" /><div className="hero-particle" /><div className="hero-particle" />
         <div className="hero-particle" /><div className="hero-particle" /><div className="hero-particle" />
 
-        <div className="relative mx-auto max-w-7xl text-center">
-          <div className="animate-fade-in-up badge-glass mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
+        <div className="relative mx-auto max-w-4xl text-center">
+          <div className="animate-fade-in-up badge-glass mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-medium tracking-wide text-gray-300">Live Middleman Verification</span>
+            <span className="text-xs font-medium tracking-wide text-gray-300 dark:!text-gray-300">Live Middleman Verification</span>
           </div>
-          <h1 className="animate-fade-in-up delay-100 mb-5 text-5xl font-extrabold leading-[1.1] tracking-tight text-white md:text-7xl">
-            Game Accounts, <span className="bg-gradient-to-r from-primary via-orange-400 to-yellow-300 bg-clip-text text-transparent">Traded Safe</span>
+          <h1 className="animate-fade-in-up delay-100 mb-4 text-3xl font-extrabold leading-[1.15] tracking-tight text-white sm:text-4xl md:text-6xl">
+            Game Accounts <span className="text-gray-500">&</span> Items,<br className="sm:hidden" /> <span className="bg-gradient-to-r from-primary via-orange-400 to-yellow-300 bg-clip-text text-transparent">Traded Safe</span>
           </h1>
-          <p className="animate-fade-in-up delay-150 mx-auto mb-12 max-w-xl text-base leading-relaxed text-gray-400 md:text-lg">
-            Every transaction watched live by a middleman. Money held in escrow. Zero scams. Zero stress.
+          <p className="animate-fade-in-up delay-150 mx-auto mb-8 max-w-md text-sm leading-relaxed text-gray-400 dark:!text-gray-400 sm:text-base">
+            Every transaction verified live by a middleman. Money secured in escrow.
           </p>
-          <div className="animate-fade-in-up delay-200 mb-12 flex flex-wrap items-center justify-center gap-4 md:gap-6">
+          <div className="animate-fade-in-up delay-200 mb-8 flex flex-wrap items-center justify-center gap-3 sm:gap-5">
             {STATS.map((s, i) => (
-              <div key={s.label} className="glass-card flex items-center gap-3 px-5 py-3" style={{ animationDelay: `${0.2 + i * 0.08}s` }}>
-                <div className="rounded-xl bg-primary/15 p-2.5"><s.icon className="h-5 w-5 text-primary" /></div>
-                <div className="text-left"><p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">{s.label}</p><p className="text-sm font-bold text-white">{s.value}</p></div>
+              <div key={s.label} className="glass-card flex items-center gap-2.5 px-4 py-2.5" style={{ animationDelay: `${0.2 + i * 0.08}s` }}>
+                <div className="rounded-lg bg-primary/15 p-2"><s.icon className="h-4 w-4 text-primary" /></div>
+                <div className="text-left"><p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:!text-gray-500">{s.label}</p><p className="text-sm font-bold text-white">{s.value}</p></div>
               </div>
             ))}
           </div>
-          <div ref={searchBarRef} className="animate-fade-in-up delay-300 mx-auto flex max-w-lg items-center gap-3 rounded-2xl bg-white/5 px-5 py-4 ring-1 ring-white/8 transition-all duration-300 focus-within:bg-white/8 focus-within:ring-primary/50 focus-within:shadow-[0_0_40px_rgba(244,117,33,0.12)]">
-            <Search className="h-5 w-5 shrink-0 text-gray-500" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by game, rank, or inventory..." className="w-full bg-transparent text-sm text-white placeholder:text-gray-500 focus:outline-none" />
+          <div ref={searchBarRef} className="animate-fade-in-up delay-300 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-white/5 px-4 py-3 ring-1 ring-white/8 transition-all duration-300 focus-within:bg-white/8 focus-within:ring-primary/50 focus-within:shadow-[0_0_40px_rgba(244,117,33,0.12)]">
+            <Search className="h-4 w-4 shrink-0 text-gray-500 dark:!text-gray-500" />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by game, rank, or inventory..." className="w-full bg-transparent text-sm text-white placeholder:text-gray-500 dark:placeholder:!text-gray-500 focus:outline-none" />
             {search && (
-              <button onClick={() => setSearch("")} className="shrink-0 rounded-full p-0.5 text-gray-500 hover:text-white transition-colors"><X className="h-4 w-4" /></button>
+              <button onClick={() => setSearch("")} className="shrink-0 rounded-full p-0.5 text-gray-500 dark:!text-gray-500 hover:text-white transition-colors"><X className="h-4 w-4" /></button>
             )}
           </div>
         </div>
 
         {/* Game categories — inside hero */}
-        <div className="relative mx-auto mt-16 max-w-7xl">
-          <div className="mx-auto flex w-3/4 flex-wrap items-center justify-center gap-2">
+        <div className="relative mx-auto mt-12 max-w-3xl">
+          <div className="mx-auto flex flex-wrap items-center justify-center gap-1.5">
             {categories.map((cat, i) => (
               <button key={cat} onClick={() => setCategory(cat)}
                 className={`animate-fade-in-up shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ${
                   category === cat
                     ? "bg-primary text-white shadow-lg shadow-primary/25 scale-105"
-                    : "bg-white/8 text-gray-400 hover:bg-white/12 hover:text-white hover:scale-105"
+                    : "bg-white/8 text-gray-400 dark:!text-gray-400 hover:bg-white/12 hover:text-white hover:scale-105"
                 }`}
                 style={{ animationDelay: `${0.4 + i * 0.04}s` }}>
                 <span className="mr-1.5">{GAME_ICONS[cat] ?? "🎮"}</span>{cat === "All" ? "All Games" : cat}
@@ -180,7 +181,7 @@ export function BrowseListings() {
         </div>
 
         {/* Filter bar — inside hero */}
-        <div className="relative mx-auto mt-4 max-w-7xl">
+        <div className="relative mx-auto mt-3 max-w-3xl">
           <div className="flex flex-wrap items-center justify-center gap-2">
             {dynamicPlatforms.map(p => {
               const info = PLATFORM_ICONS[p] ?? { icon: Monitor, label: p };
@@ -189,7 +190,7 @@ export function BrowseListings() {
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
                     platform === p
                       ? "border-primary/50 bg-primary/15 text-primary"
-                      : "border-white/10 text-gray-400 hover:border-white/20 hover:text-white"
+                      : "border-white/10 text-gray-400 dark:!text-gray-400 hover:border-white/20 hover:text-white"
                   }`}>
                   <info.icon className="h-3.5 w-3.5" />{info.label}
                 </button>
@@ -197,10 +198,10 @@ export function BrowseListings() {
             })}
             <span className="h-5 w-px bg-white/10" />
             <select value={riskFilter} onChange={e => setRiskFilter(e.target.value as RiskRating | "")}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-400 hover:border-white/20 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20">
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-400 dark:!text-gray-400 hover:border-white/20 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20">
               {RISK_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-dark text-gray-300">{o.label}</option>)}
             </select>
-            <span className="hidden text-xs text-gray-500 sm:inline">Price:</span>
+            <span className="hidden text-xs text-gray-500 dark:!text-gray-500 sm:inline">Price:</span>
             <input type="number" placeholder="$ Min" value={minPrice} onChange={e => setMinPrice(e.target.value)}
               className="hidden w-20 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 placeholder:text-gray-600 focus:border-primary/50 focus:outline-none sm:inline" />
             <span className="hidden text-xs text-gray-600 sm:inline">–</span>
@@ -219,7 +220,7 @@ export function BrowseListings() {
       </section>
 
       {/* ═══════ LISTINGS ═══════ */}
-      <section className="bg-surface px-4 pt-6 pb-12">
+      <section className="bg-surface px-4 pt-6 pb-12 dark:bg-dark">
         <div className="mx-auto max-w-7xl">
           <div className="animate-fade-in-up mb-5 flex items-end justify-between">
             <div>
@@ -273,7 +274,7 @@ export function BrowseListings() {
       {/* ═══════ TRUST ═══════ */}
       <section ref={trustRef} className="border-t border-border bg-white px-4 py-24">
         <div className={`mx-auto max-w-4xl text-center transition-all duration-800 ${trustInView ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
-          <div className="animate-pulse-glow mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary-light px-5 py-2 text-sm font-semibold tracking-wide text-primary"><Shield className="h-4 w-4" />GlobalAccount Protect</div>
+          <div className="animate-pulse-glow mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary-light px-5 py-2 text-sm font-semibold tracking-wide text-primary"><Shield className="h-4 w-4" />RaidStore Protect</div>
           <h2 className="mb-4 text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">Trade With Confidence</h2>
           <p className="mx-auto mb-16 max-w-lg text-base leading-relaxed text-gray-500">Every transaction protected by our three-layer security system</p>
           <div className="grid gap-8 sm:grid-cols-3">
@@ -289,14 +290,44 @@ export function BrowseListings() {
       </section>
 
       {/* ═══════ FOOTER ═══════ */}
-      <footer className="border-t border-white/5 bg-dark px-4 py-12">
-        <div className="mx-auto max-w-7xl text-center">
-          <div className="mb-4 flex items-center justify-center gap-2"><Shield className="h-5 w-5 text-primary" /><span className="text-lg font-bold tracking-tight text-white">Global<span className="text-primary">Account</span></span></div>
-          <div className="mb-4 flex items-center justify-center gap-6 text-xs text-gray-500">
-            <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
-            <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+      <footer className="border-t border-gray-100 bg-white dark:border-white/[0.06] dark:bg-dark">
+        <div className="mx-auto max-w-5xl px-4 py-8">
+          <div className="grid gap-8 sm:grid-cols-3">
+            <div>
+              <Link to="/" className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                  <Shield className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-sm font-extrabold text-gray-900 dark:text-white">RaidStore</span>
+              </Link>
+              <p className="mt-3 text-xs text-gray-500 leading-relaxed dark:text-gray-400">
+                Buy and sell game accounts safely with middleman verification and escrow protection.
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Platform</p>
+              <div className="space-y-2">
+                <Link to="/" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Browse Listings</Link>
+                <Link to="/terms" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">How It Works</Link>
+                <Link to="/profile" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Verify Identity</Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Support</p>
+              <div className="space-y-2">
+                <a href={DISCORD_SERVER_URL} target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Discord Server</a>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">{SUPPORT_EMAIL}</a>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-600">&copy; 2026 GlobalAccount. All game titles and trademarks are property of their respective owners.</p>
+          <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-gray-100 pt-6 dark:border-white/[0.06] sm:flex-row">
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">
+              &copy; {new Date().getFullYear()} RaidStore. All rights reserved.
+            </p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">
+              Secured by <span className="font-semibold text-gray-500 dark:text-gray-400">middleman escrow</span>
+            </p>
+          </div>
         </div>
       </footer>
     </div>

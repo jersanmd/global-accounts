@@ -18,6 +18,7 @@ export function useListings(params?: UseListingsParams) {
         .from("listings")
         .select("*, seller:profiles!listings_seller_id_fkey(*)")
         .eq("status", "active")
+        .eq("disabled", false)
         .order("created_at", { ascending: false });
 
       if (params?.game) query = query.eq("game", params.game);
@@ -30,6 +31,7 @@ export function useListings(params?: UseListingsParams) {
     },
     staleTime: 0,
     refetchOnMount: true,
+    refetchInterval: 30_000,
   });
 }
 
@@ -38,13 +40,18 @@ export function useListing(id: string | undefined) {
     queryKey: ["listing", id],
     queryFn: async (): Promise<ListingWithSeller | null> => {
       if (!id) return null;
+      // Try direct query first (works for active listings)
       const { data, error } = await supabase
         .from("listings")
         .select("*, seller:profiles!listings_seller_id_fkey(*)")
         .eq("id", id)
         .single();
-      if (error) throw error;
-      return data as ListingWithSeller;
+      if (!error && data) return data as ListingWithSeller;
+      // Fallback: use RPC for sold/disabled listings (participants only)
+      const { data: rpcData, error: rpcErr } = await (supabase as any)
+        .rpc("get_listing_for_participant", { p_listing_id: id });
+      if (rpcErr || !rpcData) throw error || rpcErr;
+      return rpcData as unknown as ListingWithSeller;
     },
     enabled: !!id,
     staleTime: 0,

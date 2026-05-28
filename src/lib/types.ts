@@ -27,8 +27,11 @@ export interface Profile {
   last_seen_at: string | null;
   avatar_url: string | null;
   birth_date: string | null;
+  disabled: boolean;
   created_at: string;
 }
+
+export type ListingType = "account" | "in_game_items";
 
 export interface Listing {
   id: string;
@@ -40,6 +43,8 @@ export interface Listing {
   inventory_summary: string;
   risk_rating: RiskRating;
   status: ListingStatus;
+  listing_type: ListingType;
+  disabled: boolean;
   screenshots_urls: string[];
   created_at: string;
   // Joined fields
@@ -64,6 +69,16 @@ export interface Transaction {
   listing?: Listing;
   buyer?: Profile;
   middleman?: Profile;
+}
+
+export interface TransactionHistoryEntry {
+  id: string;
+  transaction_id: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  note: string | null;
+  created_at: string;
 }
 
 export interface Credential {

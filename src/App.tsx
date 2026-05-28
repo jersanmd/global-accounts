@@ -21,6 +21,7 @@ export default function App() {
         {/* Public */}
         <Route path="/" element={<BrowseListings />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/setup-profile" element={<SetupProfile />} />
         <Route path="/listings/:id" element={<ListingDetail />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -35,8 +36,8 @@ export default function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/transactions/:id" element={<TransactionView />} />
-          <Route path="/setup-profile" element={<SetupProfile />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:userId" element={<Profile />} />
         </Route>
 
         {/* Protected: seller */}

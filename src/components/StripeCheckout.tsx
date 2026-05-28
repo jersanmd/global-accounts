@@ -59,9 +59,9 @@ export function StripeCheckout({
 
   if (!clientSecret) {
     return (
-      <div className="space-y-4 rounded-xl border bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-semibold">Complete Payment</h3>
-        <p className="text-sm text-gray-600">
+      <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-dark-light">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Complete Payment</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Click below to initialize the secure payment form.
         </p>
         {error && (
@@ -79,7 +79,7 @@ export function StripeCheckout({
           </button>
           <button
             onClick={onCancel}
-            className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
           >
             Cancel
           </button>
@@ -130,9 +130,9 @@ function CheckoutForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border bg-white p-6 shadow-sm"
+      className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-dark-light"
     >
-      <h3 className="text-lg font-semibold">Card Details</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Card Details</h3>
 
       {error && (
         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -153,7 +153,7 @@ function CheckoutForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+          className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
         >
           Cancel
         </button>

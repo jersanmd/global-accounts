@@ -2,8 +2,10 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useListing, useListings } from "@/hooks/useListings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateTransaction } from "@/hooks/useTransactions";
-import { formatUSD, calcBuyerPrice, getAvatarUrl } from "@/lib/utils";
-import { RISK_LABELS, RISK_COLORS, BUYER_FEE_PERCENT } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
+import { createNotification } from "@/hooks/useNotifications";
+import { formatUSD, calcBuyerPrice, getAvatarUrl, timeAgo } from "@/lib/utils";
+import { RISK_LABELS, RISK_COLORS, BUYER_FEE_PERCENT, LISTING_TYPE_LABELS } from "@/lib/constants";
 import { Shield, Star, ShieldCheck, Calendar, MessageCircle, Award, ChevronLeft, ChevronRight, ShoppingCart, ImageIcon, Check, Clock, Tag, Info, Home, Maximize2, X } from "lucide-react";
 import { isUserOnline } from "@/hooks/useOnlineStatus";
 import { ListingCard } from "@/components/ListingCard";
@@ -30,8 +32,19 @@ export function ListingDetail() {
     setRequesting(true);
     try {
       const tx = await createTx.mutateAsync({ listingId: listing.id, amountUsd: calcBuyerPrice(listing.price_usd) });
+      // Do NOT mark as sold yet — only disable when paid, mark sold when completed
+      // Notify seller
+      if (listing.seller_id) {
+        createNotification({
+          user_id: listing.seller_id,
+          type: "new_sale",
+          title: "New Purchase Request",
+          message: `Someone wants to buy your ${listing.game} listing for ${formatUSD(calcBuyerPrice(listing.price_usd))}. Awaiting payment.`,
+          link: `/transactions/${tx.id}`,
+        });
+      }
       navigate(`/transactions/${tx.id}`);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Failed to create transaction:", err); }
     finally { setRequesting(false); }
   };
 
@@ -41,6 +54,8 @@ export function ListingDetail() {
   const buyerPrice = calcBuyerPrice(listing.price_usd);
   const screenshots = listing.screenshots_urls ?? [];
   const seller = listing.seller;
+  const isOwnListing = user && profile && listing.seller_id === profile.id;
+  const isSoldOrDisabled = listing.status !== "active" || listing.disabled;
 
   const relatedListings = (related ?? []).filter(l => l.id !== listing.id).slice(0, 4);
 
@@ -117,7 +132,7 @@ export function ListingDetail() {
           <div className="mt-8">
             <div className="mb-4 flex items-center gap-2">
               <div className="rounded-lg bg-primary/10 p-1.5"><Info className="h-4 w-4 text-primary" /></div>
-              <h2 className="text-lg font-bold tracking-tight text-gray-900">Account Details</h2>
+              <h2 className="text-lg font-bold tracking-tight text-gray-900">{listing.listing_type === "in_game_items" ? "Item Details" : "Account Details"}</h2>
             </div>
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed whitespace-pre-line">
@@ -188,7 +203,20 @@ export function ListingDetail() {
 
               {/* Action */}
               <div className="mt-5 space-y-2">
-                {user && profile?.role !== "seller" ? (
+                {isSoldOrDisabled && !isOwnListing && (
+                  <div className="rounded-xl bg-gray-50 p-3 text-center text-sm font-medium text-gray-500">
+                    This listing is no longer available
+                  </div>
+                )}
+                {isOwnListing ? (
+                  <div className="rounded-xl bg-primary/5 p-4 text-center">
+                    <p className="text-sm font-semibold text-primary">This is your listing</p>
+                    <Link to={`/create-listing?edit=${listing.id}`}
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+                      Edit Listing →
+                    </Link>
+                  </div>
+                ) : user && profile?.role !== "seller" && listing.status === "active" && !listing.disabled ? (
                   <button onClick={handleRequestMiddleman} disabled={requesting || listing.status !== "active"}
                     className="btn-shine flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50">
                     <ShoppingCart className="h-4.5 w-4.5" />
@@ -209,7 +237,8 @@ export function ListingDetail() {
               </div>
             </div>
 
-            {/* Seller Card */}
+            {/* Seller Card — hide when viewing own listing */}
+            {!isOwnListing && (
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Seller</h3>
               <div className="flex items-center gap-3">
@@ -227,7 +256,7 @@ export function ListingDetail() {
                     <span className="text-gray-300">·</span>
                     <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${isUserOnline(seller?.last_seen_at) ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${isUserOnline(seller?.last_seen_at) ? "bg-green-500" : "bg-gray-400"}`} />
-                      {isUserOnline(seller?.last_seen_at) ? "Online" : "Offline"}
+                      {isUserOnline(seller?.last_seen_at) ? "Online" : seller?.last_seen_at ? `Offline · ${timeAgo(seller.last_seen_at)}` : "Offline"}
                     </span>
                   </div>
                 </div>
@@ -244,6 +273,7 @@ export function ListingDetail() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Seller Reviews */}
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
