@@ -1,6 +1,6 @@
 // Supabase Edge Function: create-payment-intent
-// Creates a Stripe PaymentIntent for the buyer to pay.
-// Called from the frontend when buyer clicks "Request Middleman".
+// Creates a Stripe PaymentIntent for direct checkout (no transaction yet).
+// Transaction is created by handle-payment-success webhook after payment.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
@@ -18,50 +18,39 @@ const supabase = createClient(
 
 serve(async (req: Request) => {
   try {
-    const { transactionId, amountUsd } = await req.json();
+    const { listingId, amountUsd, buyerId, quantity } = await req.json();
 
-    if (!transactionId || !amountUsd) {
+    if (!listingId || !amountUsd || !buyerId) {
       return new Response(
-        JSON.stringify({ error: "Missing transactionId or amountUsd" }),
+        JSON.stringify({ error: "Missing listingId, amountUsd, or buyerId" }),
         { status: 400 }
       );
     }
 
-    // Verify transaction exists and is awaiting payment
-    const { data: tx, error: txError } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("id", transactionId)
+    // Verify listing exists and is active
+    const { data: listing, error: listingError } = await supabase
+      .from("listings")
+      .select("id, seller_id, game, price_usd, status")
+      .eq("id", listingId)
       .single();
 
-    if (txError || !tx) {
-      return new Response(JSON.stringify({ error: "Transaction not found" }), {
-        status: 404,
-      });
+    if (listingError || !listing || listing.status !== "active") {
+      return new Response(JSON.stringify({ error: "Listing not available" }), { status: 400 });
     }
 
-    if (tx.status !== "awaiting_payment") {
-      return new Response(
-        JSON.stringify({ error: "Transaction is not awaiting payment" }),
-        { status: 400 }
-      );
-    }
-
-    // Create PaymentIntent (manual capture for escrow)
+    // Create PaymentIntent with purchase metadata (transaction created later)
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amountUsd * 100), // cents
+      amount: Math.round(amountUsd * 100),
       currency: "usd",
       capture_method: "manual",
       metadata: {
-        transaction_id: transactionId,
+        listing_id: listingId,
+        buyer_id: buyerId,
+        amount_usd: String(amountUsd),
+        quantity: String(quantity ?? 1),
+        payment_method: "stripe",
       },
     });
-
-    // Save payment intent ID to transaction
-    await supabase
-      .from("transactions")
-      .update({ stripe_payment_intent_id: paymentIntent.id })
-      .eq("id", transactionId);
 
     return new Response(
       JSON.stringify({ clientSecret: paymentIntent.client_secret }),

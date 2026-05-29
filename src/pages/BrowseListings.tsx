@@ -6,7 +6,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Search, Shield, ShieldCheck, Users, Headphones, TrendingUp, X, Monitor, Smartphone, Gamepad, Tv, Laptop, User, Coins, Package } from "lucide-react";
-import { RISK_LABELS, SUPPORT_EMAIL, DISCORD_SERVER_URL } from "@/lib/constants";
+import { RISK_LABELS, SUPPORT_EMAIL } from "@/lib/constants";
 import { useSearchContext } from "@/contexts/SearchContext";
 import type { RiskRating } from "@/lib/types";
 
@@ -334,7 +334,7 @@ export function BrowseListings() {
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Support</p>
               <div className="space-y-2">
-                <a href={DISCORD_SERVER_URL} target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Discord Server</a>
+                <a href="mailto:support@raidstore.gg" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">support@raidstore.gg</a>
                 <a href={`mailto:${SUPPORT_EMAIL}`} className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">{SUPPORT_EMAIL}</a>
               </div>
             </div>

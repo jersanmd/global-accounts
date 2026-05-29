@@ -6,7 +6,6 @@ export const BUYER_FEE_PERCENT = 3;
 
 // ─── Transaction Status Flow ───
 export const TRANSACTION_STATUS_FLOW: TransactionStatus[] = [
-  "awaiting_payment",
   "paid",
   "mm_assigned",
   "channel_created",
@@ -18,10 +17,9 @@ export const TRANSACTION_STATUS_FLOW: TransactionStatus[] = [
 
 // ─── Status Labels ───
 export const STATUS_LABELS: Record<TransactionStatus, string> = {
-  awaiting_payment: "Awaiting Payment",
   paid: "Paid",
   mm_assigned: "Middleman Assigned",
-  channel_created: "Discord Channel Created",
+  channel_created: "Group Chat Created",
   demo_completed: "Demo Completed",
   transfer_witnessed: "Transfer Witnessed",
   funds_released: "Funds Released",
@@ -107,5 +105,12 @@ export const MAX_SCREENSHOT_SIZE_MB = 5;
 // ─── Contact & Links ───
 export const SUPPORT_EMAIL = "support@raidstore.gg";
 export const PRIVACY_EMAIL = "privacy@raidstore.com";
-export const DISCORD_SERVER_URL = "https://discord.gg/raidstore";
-export const DISCORD_BOT_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/discord-bot/create-channel`;
+
+// ─── Crypto ───
+export const PLATFORM_USDC_ADDRESS = import.meta.env.VITE_PLATFORM_USDC_ADDRESS || "0x541e5d5142c536f3ecbb166b2355c9a3c9141ead";
+export const PLATFORM_BSC_ADDRESS = import.meta.env.VITE_PLATFORM_BSC_ADDRESS || "0x541e5d5142c536f3ecbb166b2355c9a3c9141ead";
+export const PLATFORM_TRON_ADDRESS = import.meta.env.VITE_PLATFORM_TRON_ADDRESS || "TAC372pngAay91sm1YapNhf7nh9h1JdY3y";
+export const PLATFORM_KLAYTN_ADDRESS = import.meta.env.VITE_PLATFORM_KLAYTN_ADDRESS || "0x541e5d5142c536f3ecbb166b2355c9a3c9141ead";
+export const PLATFORM_SOL_ADDRESS = import.meta.env.VITE_PLATFORM_SOL_ADDRESS || "";
+export const PLATFORM_ICP_ADDRESS = import.meta.env.VITE_PLATFORM_ICP_ADDRESS || "38f2b12a9831a41c61063cc8102cbc83f344f01d044258d58008153e285e7fcc";
+export const ETHERSCAN_API_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY || "";

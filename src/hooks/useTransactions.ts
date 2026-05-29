@@ -188,7 +188,7 @@ export function useCreateTransaction() {
           buyer_id: user.user.id,
           amount_usd: amountUsd,
           quantity,
-          status: "awaiting_payment",
+          status: "paid",
         })
         .select()
         .single();

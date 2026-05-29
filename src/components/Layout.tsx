@@ -2,12 +2,13 @@ import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { getAvatarUrl } from "@/lib/utils";
-import { SUPPORT_EMAIL, DISCORD_SERVER_URL } from "@/lib/constants";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 import { Shield, ShoppingCart, LogOut, Menu, X, LayoutDashboard, Banknote, ShieldCheck, Settings, Search, Bell, Check, Sun, Moon } from "lucide-react";
 import { useSearchContext } from "@/contexts/SearchContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState, useRef, useEffect } from "react";
+import { ChatPanel } from "@/components/ChatPanel";
 import { formatUSD, timeAgo } from "@/lib/utils";
 
 export function Layout() {
@@ -286,6 +287,8 @@ export function Layout() {
 
       <Outlet />
 
+      <ChatPanel />
+
       {/* Footer — hidden on browse page */}
       {location.pathname !== "/" && (
       <footer className="border-t border-gray-100 bg-white dark:border-white/[0.06] dark:bg-dark">
@@ -318,8 +321,7 @@ export function Layout() {
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Support</p>
               <div className="space-y-2">
-                <a href={DISCORD_SERVER_URL} target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Discord Server</a>
-                <a href={`mailto:${SUPPORT_EMAIL}`} className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">{SUPPORT_EMAIL}</a>
+                <a href="mailto:support@raidstore.gg" className="block text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">support@raidstore.gg</a>
               </div>
             </div>
           </div>

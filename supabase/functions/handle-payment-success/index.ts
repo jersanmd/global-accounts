@@ -1,6 +1,6 @@
 // Supabase Edge Function: handle-payment-success
-// Stripe webhook handler — called when buyer completes payment.
-// Updates transaction status to 'paid' and triggers middleman assignment.
+// Stripe webhook handler — creates transaction on first payment, updates on subsequent.
+// Transaction is NOT created until payment confirmed.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
@@ -26,63 +26,62 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.text();
-    const event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret
-    );
+    const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
 
     if (event.type === "payment_intent.succeeded") {
-      const paymentIntent = event.data.object;
-      const transactionId = paymentIntent.metadata.transaction_id;
+      const pi = event.data.object;
+      const meta = pi.metadata;
 
-      if (!transactionId) {
-        console.error("No transaction_id in payment metadata");
+      // Check if transaction already exists (old flow compatibility)
+      if (meta.transaction_id) {
+        await supabase.from("transactions").update({ status: "paid" }).eq("id", meta.transaction_id);
+        await supabase.from("payments").insert({
+          transaction_id: meta.transaction_id, amount_usd: pi.amount / 100, type: "payment", status: "succeeded",
+        });
+        await supabase.rpc("assign_middleman", { tx_id: meta.transaction_id });
         return new Response("OK", { status: 200 });
       }
 
-      // Update transaction to paid
-      const { error: updateError } = await supabase
-        .from("transactions")
-        .update({ status: "paid" })
-        .eq("id", transactionId);
+      // New flow: create transaction from metadata
+      if (!meta.listing_id || !meta.buyer_id || !meta.amount_usd) {
+        console.error("Missing metadata for transaction creation");
+        return new Response("OK", { status: 200 });
+      }
 
-      if (updateError) {
-        console.error("Failed to update transaction:", updateError);
+      const amountUsd = parseFloat(meta.amount_usd);
+      const quantity = parseInt(meta.quantity || "1");
+
+      // Create transaction with status "paid"
+      const { data: tx, error: createError } = await supabase
+        .from("transactions")
+        .insert({
+          listing_id: meta.listing_id,
+          buyer_id: meta.buyer_id,
+          amount_usd: amountUsd,
+          quantity,
+          status: "paid",
+          stripe_payment_intent_id: pi.id,
+          payment_method: "stripe",
+        })
+        .select("id")
+        .single();
+
+      if (createError || !tx) {
+        console.error("Failed to create transaction:", createError);
         return new Response("OK", { status: 200 });
       }
 
       // Log payment
       await supabase.from("payments").insert({
-        transaction_id: transactionId,
-        amount_usd: paymentIntent.amount / 100,
-        type: "payment",
-        status: "succeeded",
+        transaction_id: tx.id, amount_usd: amountUsd, type: "payment", status: "succeeded",
       });
 
-      // Assign middleman via RPC
-      const { error: mmError } = await supabase.rpc("assign_middleman", {
-        tx_id: transactionId,
-      });
-
-      if (mmError) {
-        console.error("Middleman assignment failed:", mmError);
-        // Transaction stays at 'paid' — admin can manually assign
-      }
+      // Assign middleman
+      const { error: mmError } = await supabase.rpc("assign_middleman", { tx_id: tx.id });
+      if (mmError) console.error("Middleman assignment failed:", mmError);
 
       // Mark listing as sold
-      const { data: tx } = await supabase
-        .from("transactions")
-        .select("listing_id")
-        .eq("id", transactionId)
-        .single();
-
-      if (tx) {
-        await supabase
-          .from("listings")
-          .update({ status: "sold" })
-          .eq("id", tx.listing_id);
-      }
+      await supabase.from("listings").update({ status: "sold" }).eq("id", meta.listing_id);
     }
 
     return new Response("OK", { status: 200 });

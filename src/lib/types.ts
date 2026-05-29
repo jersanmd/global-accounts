@@ -6,7 +6,6 @@ export type ListingStatus = "active" | "sold" | "cancelled";
 export type RiskRating = "low" | "medium" | "high" | "critical";
 
 export type TransactionStatus =
-  | "awaiting_payment"
   | "paid"
   | "mm_assigned"
   | "channel_created"
@@ -58,7 +57,10 @@ export interface Transaction {
   listing_id: string;
   buyer_id: string;
   middleman_id: string | null;
-  stripe_payment_intent_id: string | null;
+  payment_method: "crypto";
+  crypto_tx_hash: string | null;
+  crypto_currency: string | null;
+  crypto_network: string | null;
   amount_usd: number;
   status: TransactionStatus;
   discord_channel_id: string | null;

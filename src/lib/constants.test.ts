@@ -12,8 +12,6 @@ import {
   MAX_SCREENSHOT_SIZE_MB,
   SUPPORT_EMAIL,
   PRIVACY_EMAIL,
-  DISCORD_SERVER_URL,
-  DISCORD_BOT_FUNCTION_URL,
 } from "./constants";
 
 describe("constants", () => {
@@ -27,11 +25,11 @@ describe("constants", () => {
 
   // ─── Transaction Flow ───
   it("has correct transaction status flow length", () => {
-    expect(TRANSACTION_STATUS_FLOW).toHaveLength(8);
+    expect(TRANSACTION_STATUS_FLOW).toHaveLength(7);
   });
 
-  it("transaction flow starts with awaiting_payment", () => {
-    expect(TRANSACTION_STATUS_FLOW[0]).toBe("awaiting_payment");
+  it("transaction flow starts with paid", () => {
+    expect(TRANSACTION_STATUS_FLOW[0]).toBe("paid");
   });
 
   it("transaction flow ends with completed", () => {
@@ -86,13 +84,5 @@ describe("constants", () => {
   it("has contact emails defined", () => {
     expect(SUPPORT_EMAIL).toContain("@");
     expect(PRIVACY_EMAIL).toContain("@");
-  });
-
-  it("has Discord URL defined", () => {
-    expect(DISCORD_SERVER_URL).toContain("discord");
-  });
-
-  it("has Discord bot function URL", () => {
-    expect(DISCORD_BOT_FUNCTION_URL).toContain("discord-bot");
   });
 });

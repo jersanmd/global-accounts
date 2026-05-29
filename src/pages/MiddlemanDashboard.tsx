@@ -3,8 +3,9 @@ import { supabase } from "@/lib/supabase";
 import { createNotification } from "@/hooks/useNotifications";
 import { Link } from "react-router-dom";
 import { formatUSD, formatDate, timeAgo, cn } from "@/lib/utils";
-import { STATUS_LABELS, TRANSACTION_STATUS_FLOW, DISCORD_BOT_FUNCTION_URL } from "@/lib/constants";
+import { STATUS_LABELS, TRANSACTION_STATUS_FLOW } from "@/lib/constants";
 import { useMemo, useState } from "react";
+import { useChat } from "@/contexts/ChatContext";
 import {
   Shield, MessageCircle, CheckCircle, ShieldCheck, ArrowRight,
   Clock, Users, BarChart3, Sparkles, Eye, ExternalLink, Wallet,
@@ -30,7 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_DESCRIPTIONS: Record<string, string> = {
-  mm_assigned: "Create a Discord channel to begin verification.",
+  mm_assigned: "Create a group chat to begin verification.",
   channel_created: "Waiting for the buyer to approve the demo.",
   demo_completed: "Now witness the account transfer.",
   transfer_witnessed: "Release funds to complete the transaction.",
@@ -44,60 +45,38 @@ export function MiddlemanDashboard() {
   const updateTx = useUpdateTransaction();
 
   const [actionError, setActionError] = useState("");
+  const { openChat } = useChat();
 
   const handleAction = async (txId: string, updates: Record<string, unknown>, confirmLabel?: string) => {
     if (confirmLabel && !window.confirm(confirmLabel)) return;
     setActionError("");
     try {
-      // If creating a Discord channel, call the edge function first
+      // Create group chat
       if (updates.status === "channel_created") {
         try {
-          const { data: session } = await supabase.auth.getSession();
-          const token = session?.session?.access_token;
-          const res = await fetch(
-            DISCORD_BOT_FUNCTION_URL,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-              body: JSON.stringify({ transaction_id: txId }),
-            }
-          );
-          const result = await res.json();
-          if (!res.ok || result.error) {
-            const msg = result.error || result.details || `HTTP ${res.status}`;
-            const hint = result.hint || "";
-            setActionError(hint ? `${msg}. ${hint}` : msg);
-            return;
+          const { data: convId, error } = await supabase.rpc("create_transaction_group", { tx_id: txId });
+          if (error) { setActionError(error.message); return; }
+          const tx = transactions?.find(t => t.id === txId);
+          const game = tx?.listing?.game || "the listing";
+          if (tx) {
+            if (tx.buyer_id) createNotification({
+              user_id: tx.buyer_id, type: "channel_created",
+              title: "💬 Group Chat Ready",
+              message: `A group chat has been created for ${game}. Open the chat panel to join.`,
+              link: `/transactions/${txId}`,
+            });
+            if (tx.listing?.seller_id) createNotification({
+              user_id: tx.listing.seller_id, type: "channel_created",
+              title: "💬 Group Chat Ready",
+              message: `A group chat has been created for ${game}. Open the chat panel to join.`,
+              link: `/transactions/${txId}`,
+            });
           }
-          if (result?.invite_url) {
-            // Success — notify with invite link
-            const tx = transactions?.find(t => t.id === txId);
-            const inviteUrl = result.invite_url;
-            const game = tx?.listing?.game || "the listing";
-            if (tx) {
-              if (tx.buyer_id) createNotification({
-                user_id: tx.buyer_id, type: "channel_created",
-                title: "🔒 Discord Channel Ready",
-                message: `Join the private channel for ${game}: ${inviteUrl}`,
-                link: `/transactions/${txId}`,
-              });
-              if (tx.listing?.seller_id) createNotification({
-                user_id: tx.listing.seller_id, type: "channel_created",
-                title: "🔒 Discord Channel Ready",
-                message: `Join the private channel for ${game}: ${inviteUrl}`,
-                link: `/transactions/${txId}`,
-              });
-            }
-            refetch();
-            return;
-          }
-          setActionError("Discord bot returned an unexpected response. Try again.");
+          if (convId) openChat(convId);
+          refetch();
           return;
         } catch (err: any) {
-          setActionError(err?.message || "Discord bot is not available. Deploy the edge function first.");
+          setActionError(err?.message || "Failed to create group chat");
           return;
         }
       } else {
@@ -360,11 +339,11 @@ export function MiddlemanDashboard() {
                   <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3 dark:border-white/5">
                     {(tx.status === "mm_assigned" || tx.discord_channel_id === "pending" || tx.discord_channel_id === "manual") && (
                       <button onClick={() => {
-                        if (!window.confirm("Create a Discord channel for this transaction? This action cannot be undone.")) return;
+                        if (!window.confirm("Create a group chat for this transaction?")) return;
                         handleAction(tx.id, { status: "channel_created", discord_channel_id: "pending" });
                       }}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/25">
-                        <MessageCircle className="h-3.5 w-3.5" />Create Discord Channel
+                        <MessageCircle className="h-3.5 w-3.5" />Create Group Chat
                       </button>
                     )}
 
@@ -411,7 +390,7 @@ export function MiddlemanDashboard() {
 
                     {tx.discord_channel_id === "pending" && (
                       <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                        ⏳ Retry: Discord invite pending
+                        ⏳ Retry: Group chat pending
                       </span>
                     )}
 
@@ -424,7 +403,7 @@ export function MiddlemanDashboard() {
 
                     {tx.discord_channel_id === "pending" && (
                       <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                        ⏳ Creating Discord invite...
+                        ⏳ Creating group chat...
                       </span>
                     )}
 

@@ -6,11 +6,13 @@ import { supabase } from "@/lib/supabase";
 import { createNotification } from "@/hooks/useNotifications";
 import { formatUSD, calcBuyerPrice, getAvatarUrl, timeAgo } from "@/lib/utils";
 import { RISK_LABELS, RISK_COLORS, BUYER_FEE_PERCENT, LISTING_TYPE_LABELS } from "@/lib/constants";
-import { Shield, Star, ShieldCheck, Calendar, MessageCircle, Award, ChevronLeft, ChevronRight, ShoppingCart, ImageIcon, Check, Clock, Tag, Info, Home, Maximize2, X } from "lucide-react";
+import { Shield, Star, ShieldCheck, Calendar, MessageCircle, Award, ChevronLeft, ChevronRight, ImageIcon, Check, Clock, Tag, Info, Home, Maximize2, X } from "lucide-react";
 import { isUserOnline } from "@/hooks/useOnlineStatus";
 import { ListingCard } from "@/components/ListingCard";
 import { StarRating } from "@/components/StarRating";
+import { CryptoCheckout } from "@/components/CryptoCheckout";
 import { useReviews } from "@/hooks/useReviews";
+import { useChat } from "@/contexts/ChatContext";
 import { useState } from "react";
 
 export function ListingDetail() {
@@ -18,36 +20,44 @@ export function ListingDetail() {
   const { data: listing, isLoading, error } = useListing(id);
   const { user, profile } = useAuth();
   const createTx = useCreateTransaction();
+  const { startDM, openChat } = useChat();
   const navigate = useNavigate();
   const [selectedImg, setSelectedImg] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [showCheckout, setShowCheckout] = useState(false);
+
+  const buyerPrice = calcBuyerPrice(listing?.price_usd ?? 0) * quantity;
+
+  const handleBuyNow = () => {
+    if (!listing || !user) return;
+    setShowCheckout(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    setShowCheckout(false);
+    if (!listing || !user) return;
+    // Poll for the transaction created by the crypto verification edge function
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      const { data } = await supabase
+        .from("transactions")
+        .select("id")
+        .eq("listing_id", listing.id)
+        .eq("buyer_id", user.id)
+        .in("status", ["paid", "mm_assigned"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (data) { navigate(`/transactions/${data.id}`); return; }
+    }
+    navigate("/dashboard");
+  };
 
   // All hooks must be called before any early returns
   const { data: related } = useListings({ game: listing?.game });
   const { data: reviews } = useReviews(listing?.seller?.id);
-
-  const handleRequestMiddleman = async () => {
-    if (!listing || !user) return;
-    setRequesting(true);
-    try {
-      const tx = await createTx.mutateAsync({ listingId: listing.id, amountUsd: calcBuyerPrice(listing.price_usd) * quantity, quantity });
-      // Do NOT mark as sold yet — only disable when paid, mark sold when completed
-      // Notify seller
-      if (listing.seller_id) {
-        createNotification({
-          user_id: listing.seller_id,
-          type: "new_sale",
-          title: "New Purchase Request",
-          message: `Someone wants to buy your ${listing.game} listing for ${formatUSD(calcBuyerPrice(listing.price_usd))}. Awaiting payment.`,
-          link: `/transactions/${tx.id}`,
-        });
-      }
-      navigate(`/transactions/${tx.id}`);
-    } catch (err) { /* Transaction creation failed silently */ }
-    finally { setRequesting(false); }
-  };
 
   if (isLoading) return <div className="flex h-96 items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-3 border-primary border-t-transparent" /></div>;
   if (error || !listing) return <div className="flex h-64 items-center justify-center text-gray-400">Listing not found.</div>;
@@ -58,7 +68,6 @@ export function ListingDetail() {
   const isSoldOrDisabled = listing.status !== "active" || listing.disabled;
   const isInGameItems = listing.listing_type === "in_game_items";
   const maxQty = listing.stock ?? 1;
-  const buyerPrice = calcBuyerPrice(listing.price_usd) * quantity;
   const relatedListings = (related ?? []).filter(l => l.id !== listing.id).slice(0, 4);
 
   const nextImg = () => setSelectedImg(i => (i + 1) % screenshots.length);
@@ -243,11 +252,28 @@ export function ListingDetail() {
                     </Link>
                   </div>
                 ) : user && profile?.role !== "seller" && listing.status === "active" && !listing.disabled ? (
-                  <button onClick={handleRequestMiddleman} disabled={requesting || listing.status !== "active"}
-                    className="btn-shine flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50">
-                    <ShoppingCart className="h-4.5 w-4.5" />
-                    {requesting ? "Creating..." : "Request Middleman"}
-                  </button>
+                  showCheckout ? (
+                    <div className="w-full">
+                      <CryptoCheckout
+                        listingId={listing.id}
+                        amountUsd={buyerPrice}
+                        buyerId={user.id}
+                        quantity={quantity}
+                        onSuccess={handlePaymentSuccess}
+                        onCancel={() => setShowCheckout(false)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <button onClick={handleBuyNow} disabled={requesting}
+                        className="btn-shine flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50">
+                        🪙 Buy with Crypto
+                      </button>
+                      <p className="text-center text-[10px] text-gray-400 dark:text-gray-500">
+                        Pay with USDC on Ethereum — secured by middleman escrow
+                      </p>
+                    </div>
+                  )
                 ) : !user ? (
                   <button onClick={() => navigate("/login")}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-primary py-3 text-sm font-semibold text-primary transition-all hover:bg-primary-light">
@@ -274,7 +300,7 @@ export function ListingDetail() {
                   <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-white ${isUserOnline(seller?.last_seen_at) ? "bg-green-500" : "bg-gray-300"}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{seller?.email?.split("@")[0] ?? "Seller"}</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">{seller?.discord_username || (seller?.email?.split("@")[0] ?? "Seller")}</p>
                   <div className="mt-0.5 flex items-center gap-1.5">
                     {seller?.avg_rating ? (
                       <><Star className="h-3 w-3 fill-amber-400 stroke-amber-400" /><span className="text-xs font-semibold text-gray-600">{seller.avg_rating.toFixed(1)}</span></>
@@ -297,6 +323,12 @@ export function ListingDetail() {
                   <span>{seller?.kyc_status === "approved" ? "Identity verified" : "Identity pending"}</span>
                   {seller?.kyc_status === "approved" && <ShieldCheck className="h-3.5 w-3.5 text-green-500" />}
                 </div>
+                {user && listing.seller_id !== user.id && (
+                  <button onClick={async () => { try { const convId = await startDM(listing.seller_id); openChat(convId); } catch {} }}
+                    className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5">
+                    <MessageCircle className="h-3.5 w-3.5" />Message
+                  </button>
+                )}
               </div>
             </div>
             )}

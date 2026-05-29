@@ -46,6 +46,13 @@ const LISTING_COLORS: Record<string, string> = {
   cancelled: "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
 };
 
+function listingName(listing: any, map: Record<string, any>, listingId: string): string {
+  const l = listing || map[listingId];
+  if (l?.title && l.title !== 'null') return l.title;
+  const parts = [l?.game, l?.platform, l?.rank].filter(Boolean);
+  return parts.length ? parts.join(" · ") : `Listing ${listingId?.slice(0, 8)}...`;
+}
+
 export function AdminDashboard() {
   const { profile, loading: authLoading } = useAuth();
 
@@ -70,7 +77,7 @@ export function AdminDashboard() {
   const fetchAll = async () => {
     setLoading(true);
     const [txRes, userRes, listRes] = await Promise.all([
-      supabase.from("transactions").select("*, listing:listings(game, platform, rank, seller_id), buyer:profiles!transactions_buyer_id_fkey(email, discord_username), middleman:profiles!transactions_middleman_id_fkey(email, discord_username)").order("created_at", { ascending: false }).limit(500),
+      supabase.from("transactions").select("*, listing:listings(title, game, platform, rank, seller_id), buyer:profiles!transactions_buyer_id_fkey(email, discord_username), middleman:profiles!transactions_middleman_id_fkey(email, discord_username)").order("created_at", { ascending: false }).limit(500),
       supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(500),
       supabase.from("listings").select("*, seller:profiles!listings_seller_id_fkey(email, discord_username)").order("created_at", { ascending: false }).limit(500),
     ]);
@@ -136,16 +143,23 @@ export function AdminDashboard() {
 
   const filteredListings = useMemo(() => {
     let data = [...listings];
-    if (search) data = data.filter(l => l.game?.toLowerCase().includes(search.toLowerCase()) || l.platform?.toLowerCase().includes(search.toLowerCase()));
+    if (search) data = data.filter(l => (l.title || l.game)?.toLowerCase().includes(search.toLowerCase()) || l.platform?.toLowerCase().includes(search.toLowerCase()));
     if (statusFilter !== "all") data = data.filter(l => l.status === statusFilter);
     return data;
   }, [listings, search, statusFilter]);
+
+  const listingMap = useMemo(() => {
+    const map: Record<string, typeof listings[0]> = {};
+    for (const l of listings) map[l.id] = l;
+    return map;
+  }, [listings]);
 
   // ─── Actions ───
   const handleRoleChange = async (userId: string, role: string, currentRole: string) => {
     if (role === "admin" && !confirm("Make this user an admin? They will have full access.")) return;
     if (!confirm(`Change role from "${currentRole}" to "${role}"?`)) return;
-    await (supabase.from("profiles") as any).update({ role }).eq("id", userId);
+    const { error } = await supabase.rpc("admin_update_user", { user_id: userId, new_role: role, new_kyc: null });
+    if (error) { alert("Failed: " + error.message); return; }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: role as any } : u));
   };
 
@@ -166,7 +180,8 @@ export function AdminDashboard() {
   const handleKycAction = async (userId: string, status: string, email: string) => {
     const label = status === "approved" ? "approve" : status === "rejected" ? "reject" : `set to "${status}"`;
     if (!confirm(`Confirm: ${label} KYC for "${email}"?`)) return;
-    await (supabase.from("profiles") as any).update({ kyc_status: status }).eq("id", userId);
+    const { error } = await supabase.rpc("admin_update_user", { user_id: userId, new_role: null, new_kyc: status });
+    if (error) { alert("Failed: " + error.message); return; }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, kyc_status: status as any } : u));
   };
 
@@ -430,13 +445,13 @@ export function AdminDashboard() {
                         <div className="min-w-0 flex-1">
                           {item.type === "tx" && (
                             <>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">{formatUSD((item.data as any).amount_usd)} — {(item.data as any).listing?.game ?? "Unknown"}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{formatUSD((item.data as any).amount_usd)} — {(item.data as any).listing?.title || (item.data as any).listing?.game || "Unknown"}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">Buyer: {(item.data as any).buyer?.email?.split("@")[0] ?? "?"} · {(item.data as any).status}</p>
                             </>
                           )}
                           {item.type === "listing" && (
                             <>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">{(item.data as any).game}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{(item.data as any).title || (item.data as any).game}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">{formatUSD((item.data as any).price_usd)} · {(item.data as any).platform}</p>
                             </>
                           )}
@@ -581,8 +596,8 @@ export function AdminDashboard() {
                         </td>
                         <td className="px-3 py-2">
                           <Link to={`/transactions/${t.id}`} className="block">
-                            <p className="text-[11px] font-semibold text-gray-900 hover:text-primary dark:text-white dark:hover:text-primary">{t.listing?.game ?? "—"}</p>
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500">{t.listing?.platform}{t.listing?.rank ? ` · ${t.listing.rank}` : ""}</p>
+                            <p className="text-[11px] font-semibold text-gray-900 hover:text-primary dark:text-white dark:hover:text-primary">{listingName(t.listing, listingMap, t.listing_id)}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500">{t.listing?.platform || listingMap[t.listing_id]?.platform}{t.listing?.rank || listingMap[t.listing_id]?.rank ? ` · ${t.listing?.rank || listingMap[t.listing_id]?.rank}` : ""}</p>
                           </Link>
                         </td>
                         <td className="px-3 py-2 text-right text-[11px] font-bold tabular-nums text-gray-900 dark:text-white">{formatUSD(t.amount_usd)}</td>
@@ -643,7 +658,7 @@ export function AdminDashboard() {
                       <tr key={l.id} className="transition-colors hover:bg-gray-50/30 dark:hover:bg-white/[0.03]">
                         <td className="px-3 py-2">
                           <Link to={`/listings/${l.id}`} className="block">
-                            <p className="text-[11px] font-semibold text-gray-900 hover:text-primary dark:text-white dark:hover:text-primary">{l.game}</p>
+                            <p className="text-[11px] font-semibold text-gray-900 hover:text-primary dark:text-white dark:hover:text-primary">{l.title || l.game}</p>
                             <p className="text-[10px] text-gray-400 dark:text-gray-500">{l.platform} · {l.rank}</p>
                           </Link>
                         </td>

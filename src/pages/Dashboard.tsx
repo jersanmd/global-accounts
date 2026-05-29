@@ -105,7 +105,7 @@ export function Dashboard() {
   });
 
   // Computed stats
-  const pendingEarnings = sellerTxns?.filter(t => !t.funds_released && t.status !== "awaiting_payment").reduce((s, t) => s + calcSellerPayout(t.amount_usd), 0) ?? 0;
+  const pendingEarnings = sellerTxns?.filter(t => !t.funds_released && t.status !== "paid").reduce((s, t) => s + calcSellerPayout(t.amount_usd), 0) ?? 0;
 
   // Period filter helper
   const isInPeriod = (date: string) => {
@@ -144,7 +144,7 @@ export function Dashboard() {
     if (profile?.role === "seller" && sellerFilter !== "all") {
       txns = txns.filter(tx => {
         if (sellerFilter === "completed") return tx.status === "completed" && tx._type === "sell";
-        if (sellerFilter === "pending") return tx._type === "sell" && !["completed", "disputed", "awaiting_payment"].includes(tx.status);
+        if (sellerFilter === "pending") return tx._type === "sell" && !["completed", "disputed", "paid"].includes(tx.status);
         if (sellerFilter === "active") return tx._type === "sell";
         return true;
       });
@@ -481,7 +481,7 @@ export function Dashboard() {
                 return [
                   { key: "all", label: "All" },
                   { key: "completed", label: `Completed (${periodTxns.filter(t => t.status === "completed").length})` },
-                  { key: "pending", label: `Pending (${periodTxns.filter(t => !["completed","disputed","awaiting_payment"].includes(t.status)).length})` },
+                  { key: "pending", label: `Pending (${periodTxns.filter(t => !["completed","disputed","paid"].includes(t.status)).length})` },
                 ].map(f => (
                   <button key={f.key} onClick={() => setSellerFilter(f.key as typeof sellerFilter)}
                     className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${

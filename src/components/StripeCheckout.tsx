@@ -14,16 +14,20 @@ const stripePromise = STRIPE_PUBLISHABLE_KEY
   : null;
 
 interface StripeCheckoutProps {
-  transactionId: string;
+  listingId: string;
   amountUsd: number;
+  buyerId: string;
+  quantity: number;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
 /** Wraps the Stripe Elements provider */
 export function StripeCheckout({
-  transactionId,
+  listingId,
   amountUsd,
+  buyerId,
+  quantity,
   onSuccess,
   onCancel,
 }: StripeCheckoutProps) {
@@ -38,7 +42,7 @@ export function StripeCheckout({
     try {
       const { data, error: fnError } = await supabase.functions.invoke(
         "create-payment-intent",
-        { body: { transactionId, amountUsd } }
+        { body: { listingId, amountUsd, buyerId, quantity } }
       );
       if (fnError) throw fnError;
       setClientSecret(data.clientSecret);

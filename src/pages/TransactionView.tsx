@@ -4,27 +4,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRealtimeTransaction } from "@/hooks/useRealtimeTransaction";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { formatUSD, calcBuyerPrice, calcSellerPayout, formatDate, timeAgo } from "@/lib/utils";
+import { formatUSD, calcBuyerPrice, calcSellerPayout, formatDate, timeAgo, cn, getStatusProgress } from "@/lib/utils";
 import {
   STATUS_LABELS,
   TRANSACTION_STATUS_FLOW,
   BUYER_FEE_PERCENT,
   SELLER_FEE_PERCENT,
-  DISCORD_BOT_FUNCTION_URL,
 } from "@/lib/constants";
-import { cn, getStatusProgress } from "@/lib/utils";
 import { Check, ExternalLink, AlertTriangle, CreditCard, Shield, User, ArrowRight, Clock, GitCommit, CheckCircle } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useChat } from "@/contexts/ChatContext";
 import { useQuery } from "@tanstack/react-query";
 import type { TransactionHistoryEntry } from "@/lib/types";
-import { StripeCheckout } from "@/components/StripeCheckout";import { createNotification } from "@/hooks/useNotifications";
+import { createNotification } from "@/hooks/useNotifications";
 export function TransactionView() {
   const { id } = useParams<{ id: string }>();
   const { data: tx, isLoading, refetch } = useTransaction(id);
   const { profile } = useAuth();
   const updateTx = useUpdateTransaction();
   const [actionError, setActionError] = useState("");
-  const [showPayment, setShowPayment] = useState(false);
+  const { openChat } = useChat();
 
   // Real-time subscription
   useRealtimeTransaction(id);
@@ -84,33 +83,14 @@ export function TransactionView() {
     if (confirmLabel && !window.confirm(confirmLabel)) return;
     setActionError("");
     try {
-      // If creating Discord channel, call edge function first (same as MiddlemanDashboard)
+      // Create group chat instead of Discord channel
       if (updates.status === "channel_created") {
         try {
-          const { data: session } = await supabase.auth.getSession();
-          const token = session?.session?.access_token;
-          const res = await fetch(
-            DISCORD_BOT_FUNCTION_URL,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-              body: JSON.stringify({ transaction_id: id }),
-            }
-          );
-          const result = await res.json();
-          if (!res.ok || result.error) {
-            setActionError(result.error || result.details || `Discord bot error (${res.status})`);
-            return;
-          }
-          // Store invite URL if returned
-          if (result?.invite_url) {
-            updates = { ...updates, discord_channel_id: result.invite_url };
-          }
+          const { data: convId, error } = await supabase.rpc("create_transaction_group", { tx_id: id });
+          if (error) { setActionError(error.message); return; }
+          if (convId) openChat(convId);
         } catch (err: unknown) {
-          setActionError(err instanceof Error ? err.message : "Discord bot not available");
+          setActionError(err instanceof Error ? err.message : "Failed to create group chat");
           return;
         }
       }
@@ -270,7 +250,7 @@ export function TransactionView() {
           "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
           tx.status === "completed" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
           tx.status === "disputed" && "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400",
-          tx.status === "awaiting_payment" && "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+          tx.status === "paid" && !tx.middleman_id && "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
           tx.status === "paid" && "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
           tx.status === "mm_assigned" && "bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400",
           tx.status === "channel_created" && "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
@@ -282,7 +262,7 @@ export function TransactionView() {
             "h-1.5 w-1.5 rounded-full",
             tx.status === "completed" && "bg-emerald-400",
             tx.status === "disputed" && "bg-red-400",
-            tx.status === "awaiting_payment" && "bg-amber-400",
+            tx.status === "paid" && !tx.middleman_id && "bg-amber-400",
             tx.status === "paid" && "bg-blue-400",
             tx.status === "mm_assigned" && "bg-purple-400",
             tx.status === "channel_created" && "bg-indigo-400",
@@ -517,15 +497,13 @@ export function TransactionView() {
         <h3 className="mb-4 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Actions</h3>
 
         {/* Payment info */}
-        {tx.status !== "awaiting_payment" && (
-          <div className="mb-4 flex items-center gap-3 rounded-lg bg-green-50 p-3 dark:bg-green-500/10">
+        <div className="mb-4 flex items-center gap-3 rounded-lg bg-green-50 p-3 dark:bg-green-500/10">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20">
               <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
             </div>
             <div className="flex-1">
               <p className="text-xs font-bold text-green-800 dark:text-green-300">
-                {formatUSD(buyerPrice)} paid by {tx.buyer?.discord_username || tx.buyer?.email?.split("@")[0] || "Buyer"}
-                {tx.stripe_payment_intent_id ? " via Stripe" : ""}
+                {formatUSD(buyerPrice)} paid via USDC by {tx.buyer?.discord_username || tx.buyer?.email?.split("@")[0] || "Buyer"}
               </p>
               <p className="text-[10px] text-green-600 dark:text-green-400">
                 {statusTimestamps["paid"]
@@ -537,14 +515,12 @@ export function TransactionView() {
             </div>
             <Check className="h-4 w-4 text-green-500 dark:text-green-400 shrink-0" />
           </div>
-        )}
 
         {/* Progress checklist — who did what, with timestamps */}
-        {tx.status !== "awaiting_payment" && (
-          <div className="mb-4 space-y-1.5">
+        <div className="mb-4 space-y-1.5">
             {[
-              { done: tx.status !== "awaiting_payment", label: "Payment", who: tx.buyer?.discord_username || tx.buyer?.email?.split("@")[0] || "Buyer", icon: CreditCard, key: "paid" },
-              { done: tx.status !== "awaiting_payment" && tx.status !== "paid", label: "Middleman Assigned", who: tx.middleman?.discord_username || tx.middleman?.email?.split("@")[0] || "Auto-assigned", icon: User, key: "mm_assigned" },
+              { done: true, label: "Payment", who: tx.buyer?.discord_username || tx.buyer?.email?.split("@")[0] || "Buyer", icon: CreditCard, key: "paid" },
+              { done: tx.status !== "paid", label: "Middleman Assigned", who: tx.middleman?.discord_username || tx.middleman?.email?.split("@")[0] || "Auto-assigned", icon: User, key: "mm_assigned" },
               { done: !!tx.discord_channel_id, label: "Discord Channel Created", who: tx.middleman?.discord_username || tx.middleman?.email?.split("@")[0] || "Middleman", icon: ExternalLink, key: "channel_created" },
               { done: !!tx.demo_approved, label: "Demo Approved", who: tx.buyer?.discord_username || tx.buyer?.email?.split("@")[0] || "Buyer", icon: Check, key: "demo_completed" },
               { done: tx.status === "demo_completed" || tx.status === "transfer_witnessed" || tx.status === "funds_released" || tx.status === "completed", label: "Demo Completed", who: tx.middleman?.discord_username || tx.middleman?.email?.split("@")[0] || "Middleman", icon: Check, key: "demo_completed_mm" },
@@ -567,48 +543,8 @@ export function TransactionView() {
               );
             })}
           </div>
-        )}
 
         <div className="flex flex-wrap gap-2.5">
-          {/* Buyer: Pay */}
-          {isBuyer && tx.status === "awaiting_payment" && (
-            <>
-              {showPayment ? (
-                <div className="w-full">
-                  <StripeCheckout
-                    transactionId={tx.id}
-                    amountUsd={tx.amount_usd}
-                    onSuccess={() => {
-                      handleAction({ status: "paid" }, "Confirm payment? This will assign a middleman.");
-                      setShowPayment(false);
-                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                      queryClient.invalidateQueries({ queryKey: ["listings"] });
-                    }}
-                    onCancel={() => setShowPayment(false)}
-                  />
-                </div>
-              ) : (
-                <div className="flex w-full flex-wrap gap-2.5">
-                  <button
-                    onClick={() => setShowPayment(true)}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-dark hover:shadow-md hover:shadow-primary/25"
-                  >
-                    <CreditCard className="h-3.5 w-3.5" />
-                    Pay with Card
-                  </button>
-                  <button
-                    onClick={() => handleAction({ status: "paid" }, "Simulate payment? This will assign a middleman.")}
-                    disabled={updateTx.isPending}
-                    className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600 transition-all hover:bg-gray-50 disabled:opacity-50 dark:border-white/10 dark:bg-dark-light dark:text-gray-300 dark:hover:bg-white/5"
-                    title="Skip payment for testing"
-                  >
-                    Simulate Payment
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-
           {/* Buyer: Approve Demo */}
           {isBuyer && tx.status === "channel_created" && !tx.demo_approved && (
             <button
@@ -627,7 +563,7 @@ export function TransactionView() {
               disabled={updateTx.isPending}
               className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 disabled:opacity-50"
             >
-              <ExternalLink className="h-3.5 w-3.5" />Create Discord Channel
+              <ExternalLink className="h-3.5 w-3.5" />Create Group Chat
             </button>
           )}
 
