@@ -3,6 +3,9 @@ import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -52,14 +55,14 @@ export function useNotifications() {
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("notifications").update({ read: true }).eq("id", id);
+      await (supabase.from("notifications") as Any).update({ read: true }).eq("id", id);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] }),
   });
 
   const markAllRead = useMutation({
     mutationFn: async () => {
-      await supabase.from("notifications").update({ read: true }).eq("user_id", user!.id).eq("read", false);
+      await (supabase.from("notifications") as Any).update({ read: true }).eq("user_id", user!.id).eq("read", false);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] }),
   });
@@ -81,7 +84,7 @@ export async function createNotification(notification: {
   message: string;
   link?: string;
 }) {
-  await supabase.from("notifications").insert({
+  await (supabase.from("notifications") as Any).insert({
     user_id: notification.user_id,
     type: notification.type,
     title: notification.title,

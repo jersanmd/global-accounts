@@ -5,14 +5,21 @@ import { ListingCard } from "@/components/ListingCard";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Search, Shield, ShieldCheck, Users, Headphones, TrendingUp, X, Monitor, Smartphone, Gamepad, Tv, Laptop } from "lucide-react";
+import { Search, Shield, ShieldCheck, Users, Headphones, TrendingUp, X, Monitor, Smartphone, Gamepad, Tv, Laptop, User, Coins, Package } from "lucide-react";
 import { RISK_LABELS, SUPPORT_EMAIL, DISCORD_SERVER_URL } from "@/lib/constants";
 import { useSearchContext } from "@/contexts/SearchContext";
 import type { RiskRating } from "@/lib/types";
 
 const GAME_ICONS: Record<string, string> = {
-  "All": "🎮", "Genshin Impact": "🌌", "Honkai: Star Rail": "🚂", "League of Legends": "⚔️",
-  "Valorant": "🎯", "Fortnite": "🏗️", "Apex Legends": "🦾", "Clash of Clans": "🏰", "World of Warcraft": "🐉",
+  "All": "🎮",
+  "Genshin Impact": "🌌", "Honkai: Star Rail": "🚂", "Zenless Zone Zero": "⚡", "Wuthering Waves": "🌊",
+  "League of Legends": "⚔️", "Valorant": "🎯", "Counter-Strike 2": "🔫", "Overwatch 2": "🦸", "Rainbow Six Siege": "🎖️",
+  "Fortnite": "🏗️", "Apex Legends": "🦾", "Call of Duty": "💣", "Warzone": "🪂", "PUBG": "🍗",
+  "Escape from Tarkov": "🎒", "Destiny 2": "🌑",
+  "Roblox": "🧱", "Minecraft": "⛏️",
+  "Grand Theft Auto V": "🚗", "Elden Ring": "💍", "Diablo IV": "😈",
+  "World of Warcraft": "🐉", "Final Fantasy XIV": "🔮", "Lost Ark": "⚓", "Path of Exile 2": "📜",
+  "Throne and Liberty": "👑", "Black Desert Online": "⚫", "Clash of Clans": "🏰",
 };
 
 const PLATFORM_ICONS: Record<string, { icon: typeof Monitor; label: string }> = {
@@ -59,6 +66,7 @@ export function BrowseListings() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc">("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [listingType, setListingType] = useState<"" | "account" | "in_game_items">("");
   const trustRef = useRef<HTMLDivElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
   const trustInView = useInView(trustRef);
@@ -75,7 +83,7 @@ export function BrowseListings() {
   }, [setHeroVisible]);
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: listings, isLoading } = useListings({ game: category !== "All" ? category : undefined });
+  const { data: listings, isLoading } = useListings({ game: category !== "All" ? category : undefined, listingType: listingType || undefined });
   const { data: dbGames } = useGameCategories();
   const { data: dynamicPlatforms = [] } = usePlatforms();
 
@@ -167,7 +175,7 @@ export function BrowseListings() {
         <div className="relative mx-auto mt-12 max-w-3xl">
           <div className="mx-auto flex flex-wrap items-center justify-center gap-1.5">
             {categories.map((cat, i) => (
-              <button key={cat} onClick={() => setCategory(cat)}
+              <button key={cat} onClick={() => { setCategory(cat); document.getElementById("browse-listings")?.scrollIntoView({ behavior: "smooth" }); }}
                 className={`animate-fade-in-up shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ${
                   category === cat
                     ? "bg-primary text-white shadow-lg shadow-primary/25 scale-105"
@@ -183,6 +191,17 @@ export function BrowseListings() {
         {/* Filter bar — inside hero */}
         <div className="relative mx-auto mt-3 max-w-3xl">
           <div className="flex flex-wrap items-center justify-center gap-2">
+            {/* Listing Type Toggle */}
+            <button onClick={() => setListingType("")} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${!listingType ? "border-primary/50 bg-primary/15 text-primary" : "border-white/10 text-gray-400 dark:!text-gray-400 hover:border-white/20 hover:text-white"}`}>
+              <Package className="h-3.5 w-3.5" />All Types
+            </button>
+            <button onClick={() => setListingType(listingType === "account" ? "" : "account")} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${listingType === "account" ? "border-blue-400/50 bg-blue-500/15 text-blue-400" : "border-white/10 text-gray-400 dark:!text-gray-400 hover:border-white/20 hover:text-white"}`}>
+              <User className="h-3.5 w-3.5" />Accounts
+            </button>
+            <button onClick={() => setListingType(listingType === "in_game_items" ? "" : "in_game_items")} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${listingType === "in_game_items" ? "border-amber-400/50 bg-amber-500/15 text-amber-400" : "border-white/10 text-gray-400 dark:!text-gray-400 hover:border-white/20 hover:text-white"}`}>
+              <Coins className="h-3.5 w-3.5" />In-Game Items
+            </button>
+            <span className="h-5 w-px bg-white/10" />
             {dynamicPlatforms.map(p => {
               const info = PLATFORM_ICONS[p] ?? { icon: Monitor, label: p };
               return (
@@ -220,7 +239,7 @@ export function BrowseListings() {
       </section>
 
       {/* ═══════ LISTINGS ═══════ */}
-      <section className="bg-surface px-4 pt-6 pb-12 dark:bg-dark">
+      <section id="browse-listings" className="bg-surface px-4 pt-6 pb-12 dark:bg-dark">
         <div className="mx-auto max-w-7xl">
           <div className="animate-fade-in-up mb-5 flex items-end justify-between">
             <div>

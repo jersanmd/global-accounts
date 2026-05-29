@@ -6,6 +6,7 @@ import { ListingDetail } from "@/pages/ListingDetail";
 import { CreateListing } from "@/pages/CreateListing";
 import { TransactionView } from "@/pages/TransactionView";
 import { Dashboard } from "@/pages/Dashboard";
+import { MyListingsView } from "@/pages/MyListingsView";
 import { MiddlemanDashboard } from "@/pages/MiddlemanDashboard";
 import { AdminDashboard } from "@/pages/AdminDashboard";
 import { Login } from "@/pages/Login";
@@ -43,6 +44,7 @@ export default function App() {
         {/* Protected: seller */}
         <Route element={<ProtectedRoute requiredRole={["seller", "admin"]} />}>
           <Route path="/create-listing" element={<CreateListing />} />
+          <Route path="/my-listings" element={<MyListingsView />} />
         </Route>
 
         {/* Protected: middleman */}

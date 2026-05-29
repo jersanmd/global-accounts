@@ -6,6 +6,8 @@ interface UseListingsParams {
   game?: string;
   platform?: string;
   sellerId?: string;
+  listingType?: string;
+  limit?: number;
 }
 
 type ListingWithSeller = Listing & { seller: Profile };
@@ -19,11 +21,14 @@ export function useListings(params?: UseListingsParams) {
         .select("*, seller:profiles!listings_seller_id_fkey(*)")
         .eq("status", "active")
         .eq("disabled", false)
+        .or("stock.gt.0,stock.is.null")
         .order("created_at", { ascending: false });
 
       if (params?.game) query = query.eq("game", params.game);
       if (params?.platform) query = query.eq("platform", params.platform);
       if (params?.sellerId) query = query.eq("seller_id", params.sellerId);
+      if (params?.listingType) query = query.eq("listing_type", params.listingType);
+      if (params?.limit) query = query.limit(params.limit);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -48,6 +53,7 @@ export function useListing(id: string | undefined) {
         .single();
       if (!error && data) return data as ListingWithSeller;
       // Fallback: use RPC for sold/disabled listings (participants only)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcData, error: rpcErr } = await (supabase as any)
         .rpc("get_listing_for_participant", { p_listing_id: id });
       if (rpcErr || !rpcData) throw error || rpcErr;

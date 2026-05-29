@@ -22,6 +22,7 @@ export function ListingDetail() {
   const [selectedImg, setSelectedImg] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   // All hooks must be called before any early returns
   const { data: related } = useListings({ game: listing?.game });
@@ -31,7 +32,7 @@ export function ListingDetail() {
     if (!listing || !user) return;
     setRequesting(true);
     try {
-      const tx = await createTx.mutateAsync({ listingId: listing.id, amountUsd: calcBuyerPrice(listing.price_usd) });
+      const tx = await createTx.mutateAsync({ listingId: listing.id, amountUsd: calcBuyerPrice(listing.price_usd) * quantity, quantity });
       // Do NOT mark as sold yet — only disable when paid, mark sold when completed
       // Notify seller
       if (listing.seller_id) {
@@ -44,19 +45,20 @@ export function ListingDetail() {
         });
       }
       navigate(`/transactions/${tx.id}`);
-    } catch (err) { console.error("Failed to create transaction:", err); }
+    } catch (err) { /* Transaction creation failed silently */ }
     finally { setRequesting(false); }
   };
 
   if (isLoading) return <div className="flex h-96 items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-3 border-primary border-t-transparent" /></div>;
   if (error || !listing) return <div className="flex h-64 items-center justify-center text-gray-400">Listing not found.</div>;
 
-  const buyerPrice = calcBuyerPrice(listing.price_usd);
   const screenshots = listing.screenshots_urls ?? [];
   const seller = listing.seller;
   const isOwnListing = user && profile && listing.seller_id === profile.id;
   const isSoldOrDisabled = listing.status !== "active" || listing.disabled;
-
+  const isInGameItems = listing.listing_type === "in_game_items";
+  const maxQty = listing.stock ?? 1;
+  const buyerPrice = calcBuyerPrice(listing.price_usd) * quantity;
   const relatedListings = (related ?? []).filter(l => l.id !== listing.id).slice(0, 4);
 
   const nextImg = () => setSelectedImg(i => (i + 1) % screenshots.length);
@@ -147,9 +149,11 @@ export function ListingDetail() {
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
                   🖥️ {listing.platform}
                 </span>
+                {listing.rank && listing.rank !== "N/A" && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
                   🏆 {listing.rank}
                 </span>
+                )}
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
                   <Clock className="h-3.5 w-3.5" />Listed {new Date(listing.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
@@ -182,8 +186,11 @@ export function ListingDetail() {
               <span className={`badge-glass mb-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${RISK_COLORS[listing.risk_rating]}`}>
                 <Shield className="h-3 w-3" />{RISK_LABELS[listing.risk_rating]} Risk
               </span>
-              <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{listing.game}</h1>
-              <p className="mt-1 text-sm font-medium text-gray-500">{listing.platform} · {listing.rank}</p>
+              <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{listing.title || listing.game}</h1>
+              <p className="mt-1 text-sm font-medium text-gray-500">
+                {listing.game} · {listing.platform}
+                {listing.rank && listing.rank !== "N/A" && <> · {listing.rank}</>}
+              </p>
               
               {/* Price */}
               <div className="mt-5 border-t border-gray-100 pt-4">
@@ -200,6 +207,25 @@ export function ListingDetail() {
                   <span className="text-2xl font-extrabold text-primary">{formatUSD(buyerPrice)}</span>
                 </div>
               </div>
+
+              {/* Quantity selector for in-game items */}
+              {isInGameItems && !isOwnListing && !isSoldOrDisabled && maxQty > 0 && (
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="mb-2 flex items-center justify-between text-xs font-semibold text-gray-500">
+                    <span>Quantity</span>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">{maxQty} available</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={quantity <= 1}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 dark:border-white/10 dark:hover:bg-white/5">−</button>
+                    <input type="number" min="1" max={maxQty} value={quantity}
+                      onChange={e => setQuantity(Math.min(maxQty, Math.max(1, Number(e.target.value) || 1)))}
+                      className="h-9 w-16 rounded-lg border border-gray-200 text-center text-sm font-bold dark:border-white/10 dark:bg-dark-light dark:text-white" />
+                    <button type="button" onClick={() => setQuantity(q => Math.min(maxQty, q + 1))} disabled={quantity >= maxQty}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 dark:border-white/10 dark:hover:bg-white/5">+</button>
+                  </div>
+                </div>
+              )}
 
               {/* Action */}
               <div className="mt-5 space-y-2">

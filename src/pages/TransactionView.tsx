@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useTransaction, useUpdateTransaction } from "@/hooks/useTransactions";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRealtimeTransaction } from "@/hooks/useRealtimeTransaction";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -9,6 +10,7 @@ import {
   TRANSACTION_STATUS_FLOW,
   BUYER_FEE_PERCENT,
   SELLER_FEE_PERCENT,
+  DISCORD_BOT_FUNCTION_URL,
 } from "@/lib/constants";
 import { cn, getStatusProgress } from "@/lib/utils";
 import { Check, ExternalLink, AlertTriangle, CreditCard, Shield, User, ArrowRight, Clock, GitCommit, CheckCircle } from "lucide-react";
@@ -76,21 +78,55 @@ export function TransactionView() {
     return map;
   }, [history]);
 
+  const queryClient = useQueryClient();
   const handleAction = async (updates: Record<string, unknown>, confirmLabel?: string) => {
     if (!id) return;
-    // Confirmation dialog
     if (confirmLabel && !window.confirm(confirmLabel)) return;
     setActionError("");
     try {
+      // If creating Discord channel, call edge function first (same as MiddlemanDashboard)
+      if (updates.status === "channel_created") {
+        try {
+          const { data: session } = await supabase.auth.getSession();
+          const token = session?.session?.access_token;
+          const res = await fetch(
+            DISCORD_BOT_FUNCTION_URL,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify({ transaction_id: id }),
+            }
+          );
+          const result = await res.json();
+          if (!res.ok || result.error) {
+            setActionError(result.error || result.details || `Discord bot error (${res.status})`);
+            return;
+          }
+          // Store invite URL if returned
+          if (result?.invite_url) {
+            updates = { ...updates, discord_channel_id: result.invite_url };
+          }
+        } catch (err: unknown) {
+          setActionError(err instanceof Error ? err.message : "Discord bot not available");
+          return;
+        }
+      }
+
       await updateTx.mutateAsync({ id, updates } as { id: string; updates: Record<string, unknown> });
 
       // When payment is marked as paid, auto-assign a middleman and hide listing
       if (updates.status === "paid") {
         const { error: mmError } = await (supabase as any).rpc("assign_middleman", { p_transaction_id: id });
-        if (mmError) console.error("Middleman assignment failed:", mmError);
+        if (mmError) { /* Middleman assignment failed — admin can manually assign */ }
 
         if (tx?.listing_id) {
-          await (supabase as any).rpc("hide_listing", { p_listing_id: tx.listing_id });
+          // Only hide accounts (one-time sale). In-game items stay visible with stock.
+          if (tx.listing?.listing_type !== "in_game_items" && !(tx.quantity && tx.quantity > 1)) {
+            await (supabase as any).rpc("hide_listing", { p_listing_id: tx.listing_id });
+          }
         }
 
         // Notify seller
@@ -132,7 +168,18 @@ export function TransactionView() {
       }
 
       if (updates.status === "funds_released") {
-        if (tx?.listing?.seller_id) createNotification({ user_id: tx.listing.seller_id, type: "funds_released", title: "Funds Released!", message: `${formatUSD(tx.amount_usd)} has been released to you for ${tx.listing?.game ?? "your sale"}.`, link: `/transactions/${id}` });
+        const payout = calcSellerPayout(subtotal);
+        if (tx?.listing?.seller_id) {
+          try {
+            await (supabase as any).rpc("wallet_release_escrow", {
+              p_user_id: tx.listing.seller_id,
+              p_amount: payout,
+              p_tx_id: id,
+              p_desc: `${tx.listing?.game ?? "Sale"} — ${formatUSD(payout)}`,
+            });
+          } catch {}
+          createNotification({ user_id: tx.listing.seller_id, type: "funds_released", title: "Funds Released!", message: `${formatUSD(payout)} has been added to your wallet for ${tx.listing?.title || tx.listing?.game || "your sale"}.`, link: `/transactions/${id}` });
+        }
       }
 
       if (updates.status === "transfer_witnessed") {
@@ -142,7 +189,19 @@ export function TransactionView() {
 
       if (updates.status === "completed") {
         if (tx?.listing_id) {
-          await (supabase as any).rpc("hide_listing", { p_listing_id: tx.listing_id });
+          const isItems = tx.listing?.listing_type === "in_game_items" || (tx.quantity && tx.quantity > 0);
+          if (isItems) {
+            // For in-game items: deduct stock only, don't hide (stock RPC auto-disables at 0)
+            try {
+              await (supabase as any).rpc("deduct_listing_stock", {
+                p_listing_id: tx.listing_id,
+                p_quantity: tx.quantity || 1,
+              });
+            } catch {}
+          } else {
+            // For accounts: hide the listing (sold once)
+            await (supabase as any).rpc("hide_listing", { p_listing_id: tx.listing_id });
+          }
         }
         if (tx?.buyer_id) createNotification({ user_id: tx.buyer_id, type: "completed", title: "Transaction Completed", message: `Your ${tx.listing?.game ?? "purchase"} is fully complete.`, link: `/transactions/${id}` });
         if (tx?.listing?.seller_id) createNotification({ user_id: tx.listing.seller_id, type: "completed", title: "Transaction Completed", message: `${tx.listing?.game ?? "Your sale"} is complete. Thank you!`, link: `/transactions/${id}` });
@@ -187,8 +246,11 @@ export function TransactionView() {
   }
 
   const listingPrice = tx.listing?.price_usd ?? 0;
-  const buyerPrice = calcBuyerPrice(listingPrice);
-  const sellerPayout = calcSellerPayout(listingPrice);
+  const qty = tx.quantity ?? 1;
+  const subtotal = listingPrice * qty;
+  const buyerPrice = tx.amount_usd; // actual total paid from transaction
+  const buyerFee = buyerPrice - subtotal;
+  const sellerPayout = calcSellerPayout(subtotal);
   const progress = getStatusProgress(tx.status, TRANSACTION_STATUS_FLOW);
   const isBuyer = profile?.id === tx.buyer_id;
   const isMiddleman = profile?.id === tx.middleman_id;
@@ -287,18 +349,24 @@ export function TransactionView() {
               <dd>
                 <Link to={`/listings/${tx.listing_id}`}
                   className="font-semibold text-primary hover:underline">
-                  {tx.listing?.game}
+                  {tx.listing?.title || tx.listing?.game || tx.listing_id?.slice(0, 8)}
                 </Link>
                 <span className="ml-1 text-gray-400 dark:text-gray-500">· {tx.listing?.platform}</span>
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500 dark:text-gray-400">List Price</dt>
-              <dd className="font-medium text-gray-900 dark:text-white">{formatUSD(listingPrice)}</dd>
+              <dd className="font-medium text-gray-900 dark:text-white">{formatUSD(listingPrice)}{qty > 1 ? ` × ${qty}` : ""}</dd>
             </div>
+            {qty > 1 && (
+            <div className="flex justify-between">
+              <dt className="text-gray-500 dark:text-gray-400">Subtotal</dt>
+              <dd className="font-medium text-gray-900 dark:text-white">{formatUSD(subtotal)}</dd>
+            </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-gray-500 dark:text-gray-400">Buyer Fee ({BUYER_FEE_PERCENT}%)</dt>
-              <dd className="text-gray-500 dark:text-gray-400">+{formatUSD(buyerPrice - listingPrice)}</dd>
+              <dd className="text-gray-500 dark:text-gray-400">+{formatUSD(buyerFee)}</dd>
             </div>
             <div className="flex justify-between border-t border-gray-100 pt-2.5 dark:border-white/5">
               <dt className="font-semibold text-gray-900 dark:text-white">Total Paid</dt>
@@ -513,6 +581,8 @@ export function TransactionView() {
                     onSuccess={() => {
                       handleAction({ status: "paid" }, "Confirm payment? This will assign a middleman.");
                       setShowPayment(false);
+                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                      queryClient.invalidateQueries({ queryKey: ["listings"] });
                     }}
                     onCancel={() => setShowPayment(false)}
                   />

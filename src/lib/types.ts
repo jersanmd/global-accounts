@@ -45,6 +45,8 @@ export interface Listing {
   status: ListingStatus;
   listing_type: ListingType;
   disabled: boolean;
+  stock: number | null;
+  title: string | null;
   screenshots_urls: string[];
   created_at: string;
   // Joined fields
@@ -63,12 +65,57 @@ export interface Transaction {
   demo_approved: boolean;
   transfer_witnessed: boolean;
   funds_released: boolean;
+  quantity: number;
   created_at: string;
   updated_at: string;
   // Joined fields
   listing?: Listing;
   buyer?: Profile;
   middleman?: Profile;
+}
+
+export interface Wallet {
+  user_id: string;
+  balance_available: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WalletLedgerEntry {
+  id: string;
+  user_id: string;
+  transaction_id: string | null;
+  type: "escrow_release" | "withdrawal" | "fee" | "refund";
+  amount: number;
+  balance_after: number;
+  description: string | null;
+  withdrawn: boolean;
+  withdrawal_id: string | null;
+  created_at: string;
+}
+
+export interface WithdrawableEntry {
+  ledger_id: string;
+  transaction_id: string | null;
+  amount: number;
+  date: string;
+  game: string | null;
+  title: string | null;
+  platform: string | null;
+}
+
+export interface WithdrawnSale {
+  game: string;
+  amount: number;
+  date: string;
+}
+
+export interface WithdrawnBatch {
+  batch_id: string;
+  date: string;
+  amount: number;
+  method: string;
+  sales: WithdrawnSale[];
 }
 
 export interface TransactionHistoryEntry {

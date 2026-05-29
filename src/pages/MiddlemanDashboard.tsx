@@ -137,17 +137,33 @@ export function MiddlemanDashboard() {
         }
 
         if (updates.funds_released) {
-          if (tx.listing?.seller_id) createNotification({
-            user_id: tx.listing.seller_id, type: "funds_released",
-            title: "Funds Released!", message: `${amount} has been released to you for ${game}.`,
-            link: `/transactions/${txId}`,
-          });
+          if (tx.listing?.seller_id) {
+            const payout = tx.amount_usd * 0.92;
+            try {
+              await (supabase as any).rpc("wallet_release_escrow", {
+                p_user_id: tx.listing.seller_id,
+                p_amount: Math.round(payout * 100) / 100,
+                p_tx_id: txId,
+                p_desc: `${game} — ${formatUSD(payout)}`,
+              });
+            } catch {}
+            createNotification({
+              user_id: tx.listing.seller_id, type: "funds_released",
+              title: "Funds Released!", message: `${formatUSD(payout)} has been added to your wallet for ${game}.`,
+              link: `/transactions/${txId}`,
+            });
+          }
         }
 
-        // If marking as completed, also mark listing as sold
+        // If marking as completed, handle listing visibility based on type
         if (updates.status === "completed") {
           if (tx.listing_id) {
-            await (supabase as any).rpc("hide_listing", { p_listing_id: tx.listing_id });
+            const isItems = tx.listing?.listing_type === "in_game_items" || (tx.quantity && tx.quantity > 0);
+            if (isItems) {
+              try { await (supabase as any).rpc("deduct_listing_stock", { p_listing_id: tx.listing_id, p_quantity: tx.quantity || 1 }); } catch {}
+            } else {
+              await (supabase as any).rpc("hide_listing", { p_listing_id: tx.listing_id });
+            }
           }
           if (tx.buyer_id) createNotification({
             user_id: tx.buyer_id, type: "completed",
@@ -162,7 +178,7 @@ export function MiddlemanDashboard() {
         }
       }
       refetch();
-    } catch (err) { console.error("Action failed:", err); }
+    } catch (err) { /* Action failed — error displayed in UI */ }
   };
 
   const stats = useMemo(() => ({

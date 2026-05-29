@@ -4,17 +4,17 @@ import { PRIVACY_EMAIL } from "@/lib/constants";
 
 export function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface dark:bg-dark">
       <div className="mx-auto max-w-4xl px-4 py-16">
         <div className="mb-8 flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-3"><Shield className="h-8 w-8 text-primary" /></div>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Privacy Policy</h1>
-            <p className="text-sm text-gray-500">Last updated: May 27, 2026</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Privacy Policy</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Last updated: May 27, 2026</p>
           </div>
         </div>
 
-        <div className="prose prose-gray max-w-none space-y-10 text-sm leading-relaxed text-gray-700">
+        <div className="prose prose-gray dark:prose-invert max-w-none space-y-10 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
 
           {/* Commitment */}
           <div className="rounded-2xl border border-green-200 bg-green-50 p-6">

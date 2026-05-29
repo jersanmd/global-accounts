@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (error) {
-      console.error("Failed to fetch profile:", error);
+      if (import.meta.env.DEV) console.error("Failed to fetch profile:", error);
       return;
     }
     setProfile(data as Profile);

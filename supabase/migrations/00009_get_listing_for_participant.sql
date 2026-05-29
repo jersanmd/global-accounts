@@ -21,7 +21,9 @@ BEGIN
     'risk_rating', l.risk_rating,
     'status', l.status,
     'listing_type', l.listing_type,
-    'disabled', l.disabled,
+    'disabled', COALESCE(l.disabled, false),
+    'title', l.title,
+    'stock', l.stock,
     'screenshots_urls', l.screenshots_urls,
     'created_at', l.created_at,
     'seller', jsonb_build_object(

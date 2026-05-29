@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { getAvatarUrl } from "@/lib/utils";
-import { Link, useParams } from "react-router-dom";
-import { Shield, User, MessageCircle, Save, Camera, ShieldCheck, Clock, XCircle, AlertTriangle, CheckCircle, Mail, Calendar, Star, Wallet, ArrowDownToLine, Smartphone, DollarSign, CircleDollarSign } from "lucide-react";
+import { Link, useParams, useLocation } from "react-router-dom";
+import { Shield, User, MessageCircle, Save, Camera, ShieldCheck, Clock, XCircle, AlertTriangle, CheckCircle, Mail, Calendar, Star, Wallet } from "lucide-react";
 import { useReviews } from "@/hooks/useReviews";
-import { formatUSD } from "@/lib/utils";
+import { WithdrawalPanel } from "@/components/WithdrawalPanel";
+import { WithdrawalHistory } from "@/components/WithdrawalHistory";
 import type { Profile as ProfileType } from "@/lib/types";
 
 const KYC_INFO: Record<string, { icon: typeof ShieldCheck; label: string; color: string; bg: string }> = {
@@ -19,6 +20,7 @@ const KYC_INFO: Record<string, { icon: typeof ShieldCheck; label: string; color:
 export function Profile() {
   const { userId } = useParams<{ userId?: string }>();
   const { user, profile: ownProfile, refreshProfile, signOut } = useAuth();
+  const location = useLocation();
   const isViewingOther = !!userId && userId !== user?.id && ownProfile?.role === "admin";
 
   // Fetch viewed user profile (admin only)
@@ -37,17 +39,15 @@ export function Profile() {
   const [displayName, setDisplayName] = useState(profile?.discord_username ?? "");
   const [discordId, setDiscordId] = useState(profile?.discord_id ?? "");
   const [birthDate, setBirthDate] = useState(profile?.birth_date?.split("T")[0] ?? "");
-  const [payoutMethod, setPayoutMethod] = useState("gcash");
-  const [payoutDetails, setPayoutDetails] = useState("");
-  const [payoutName, setPayoutName] = useState("");
-  const [paypalEmail, setPaypalEmail] = useState("");
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [kycLoading, setKycLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "earnings">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "earnings">(
+    (location.state as { tab?: string })?.tab === "earnings" ? "earnings" : "profile"
+  );
 
   // Hooks must be before any early returns
   const { data: reviews } = useReviews(user?.id);
@@ -60,25 +60,6 @@ export function Profile() {
         supabase.from("transactions").select("*", { count: "exact", head: true }).eq("status", "completed").eq("listing.seller_id", user.id),
       ]);
       return (buyerCount ?? 0) + (sellerCount ?? 0);
-    },
-    enabled: !!user,
-    staleTime: 30_000,
-  });
-
-  // Seller earnings
-  const { data: earnings } = useQuery({
-    queryKey: ["profile-earnings", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { total: 0, withdrawn: 0, pending: 0 };
-      // Get completed transactions where user is buyer or seller
-      const [{ data: buyerData }, { data: sellerData }] = await Promise.all([
-        supabase.from("transactions").select("amount_usd, funds_released, status").eq("buyer_id", user.id).eq("status", "completed"),
-        supabase.from("transactions").select("amount_usd, funds_released, status").eq("status", "completed").eq("listing.seller_id", user.id),
-      ]);
-      const txns = [...(buyerData ?? []), ...(sellerData ?? [])] as { amount_usd: number; funds_released: boolean }[];
-      const total = txns.reduce((s, t) => s + t.amount_usd, 0);
-      const withdrawn = txns.filter(t => t.funds_released).reduce((s, t) => s + t.amount_usd, 0);
-      return { total, withdrawn, pending: total - withdrawn };
     },
     enabled: !!user,
     staleTime: 30_000,
@@ -323,132 +304,36 @@ export function Profile() {
           {/* Tab: Earnings */}
           {activeTab === "earnings" && (
             <>
-          {profile.role === "seller" ? (
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="rounded-lg bg-green-100 p-1.5"><Wallet className="h-4 w-4 text-green-700" /></div>
-                <h3 className="text-sm font-bold text-gray-900">Earnings & Withdrawals</h3>
-              </div>
-
-              {/* Balance cards */}
-              <div className="mb-4 grid grid-cols-3 gap-3">
-                <div className="rounded-xl bg-gray-50 p-3 text-center">
-                  <p className="text-xs text-gray-500">Available</p>
-                  <p className="text-lg font-extrabold text-gray-900">{formatUSD((earnings?.pending ?? 0) * 0.92)}</p>
-                </div>
-                <div className="rounded-xl bg-gray-50 p-3 text-center">
-                  <p className="text-xs text-gray-500">Withdrawn</p>
-                  <p className="text-lg font-extrabold text-gray-900">{formatUSD((earnings?.withdrawn ?? 0) * 0.92)}</p>
-                </div>
-                <div className="rounded-xl bg-gray-50 p-3 text-center">
-                  <p className="text-xs text-gray-500">Total Earned</p>
-                  <p className="text-lg font-extrabold text-primary">{formatUSD((earnings?.total ?? 0) * 0.92)}</p>
-                </div>
-              </div>
-
-              {/* Payout Method Selection */}
-              <div className="mb-4">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Payout Method</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: "gcash", label: "GCash", icon: Smartphone, color: "bg-blue-500" },
-                    { id: "maya", label: "Maya", icon: CircleDollarSign, color: "bg-green-500" },
-                    { id: "paypal", label: "PayPal", icon: DollarSign, color: "bg-[#0070ba]" },
-                  ].map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setPayoutMethod(m.id)}
-                      className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
-                        payoutMethod === m.id
-                          ? "border-primary bg-primary-light shadow-sm"
-                          : "border-gray-200 text-gray-500 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className={`rounded-lg p-1.5 ${payoutMethod === m.id ? m.color : "bg-gray-200"} transition-colors`}>
-                        <m.icon className={`h-4 w-4 ${payoutMethod === m.id ? "text-white" : "text-gray-500"}`} />
-                      </div>
-                      <span className={`text-xs font-semibold ${payoutMethod === m.id ? "text-primary" : "text-gray-600"}`}>{m.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Payout Details Input */}
-              {(payoutMethod === "gcash" || payoutMethod === "maya") ? (
+              {profile.role === "seller" && profile.kyc_status === "approved" ? (
                 <>
-                  <div className="mb-3">
-                    <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-gray-400">Full Name</label>
-                    <input
-                      type="text"
-                      value={payoutName}
-                      onChange={e => setPayoutName(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
-                      placeholder="Juan Dela Cruz"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                      {payoutMethod === "gcash" ? "GCash Number" : "Maya Number"}
-                    </label>
-                    <input
-                      type="text"
-                      value={payoutDetails}
-                      onChange={e => setPayoutDetails(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
-                      placeholder="09XX XXX XXXX"
-                    />
-                  </div>
+                  <WithdrawalPanel />
+                  <WithdrawalHistory />
                 </>
+              ) : profile.role === "seller" ? (
+                <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100">
+                    <ShieldCheck className="h-8 w-8 text-amber-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">KYC Required</h3>
+                  <p className="mt-1 text-sm text-gray-500">Verify your identity to access earnings and withdrawals.</p>
+                  <button onClick={handleRequestKyc} disabled={kycLoading || profile.kyc_status === "pending"}
+                    className="mt-4 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:opacity-50">
+                    {profile.kyc_status === "pending" ? "Verification Pending…" : "Verify My Identity"}
+                  </button>
+                </div>
               ) : (
-                <div className="mb-4">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-gray-400">PayPal Email</label>
-                  <input
-                    type="email"
-                    value={paypalEmail}
-                    onChange={e => setPaypalEmail(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
-                    placeholder="seller@email.com"
-                  />
+                <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
+                    <Wallet className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Become a Seller</h3>
+                  <p className="mt-1 text-sm text-gray-500">List your gaming accounts and start earning. Verify your identity to unlock seller features.</p>
+                  <button onClick={handleRequestKyc} disabled={kycLoading || profile.kyc_status === "pending"}
+                    className="mt-4 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:opacity-50">
+                    {profile.kyc_status === "not_verified" ? "Verify My Identity" : profile.kyc_status === "pending" ? "Verification Pending…" : "Get Started"}
+                  </button>
                 </div>
               )}
-
-              {/* Withdraw button */}
-              <button
-                disabled={
-                  ((payoutMethod === "gcash" || payoutMethod === "maya") && (!payoutName || !payoutDetails)) ||
-                  (payoutMethod === "paypal" && !paypalEmail) ||
-                  (earnings?.pending ?? 0) <= 0 ||
-                  profile.kyc_status !== "approved"
-                }
-                className="btn-shine flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
-              >
-                <ArrowDownToLine className="h-4 w-4" />
-                Request Withdrawal
-              </button>
-              {(((payoutMethod === "gcash" || payoutMethod === "maya") && (!payoutName || !payoutDetails)) || (payoutMethod === "paypal" && !paypalEmail) || profile.kyc_status !== "approved") && (
-                <p className="mt-2 text-center text-xs text-gray-400">
-                  {(payoutMethod === "gcash" || payoutMethod === "maya") && !payoutName && "Enter your full name. "}
-                  {payoutMethod === "gcash" && payoutName && !payoutDetails && "Enter your GCash number. "}
-                  {payoutMethod === "maya" && payoutName && !payoutDetails && "Enter your Maya number. "}
-                  {payoutMethod === "paypal" && !paypalEmail && "Enter your PayPal email. "}
-                  {profile.kyc_status !== "approved" && "KYC verification required."}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
-                <Wallet className="h-8 w-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">Become a Seller</h3>
-              <p className="mt-1 text-sm text-gray-500">List your gaming accounts and start earning. Verify your identity to unlock seller features.</p>
-              <button onClick={handleRequestKyc} disabled={kycLoading || profile.kyc_status === "pending"}
-                className="mt-4 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:opacity-50">
-                {profile.kyc_status === "not_verified" ? "Verify My Identity" : profile.kyc_status === "pending" ? "Verification Pending" : "Get Started"}
-              </button>
-            </div>
-          )}
             </>
           )}
 

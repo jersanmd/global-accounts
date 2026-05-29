@@ -65,7 +65,7 @@ export function StripeCheckout({
           Click below to initialize the secure payment form.
         </p>
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">
             {error}
           </div>
         )}

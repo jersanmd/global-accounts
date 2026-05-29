@@ -3,17 +3,17 @@ import { Link } from "react-router-dom";
 
 export function TermsOfService() {
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface dark:bg-dark">
       <div className="mx-auto max-w-4xl px-4 py-16">
         <div className="mb-8 flex items-center gap-3">
           <div className="rounded-xl bg-primary/10 p-3"><Shield className="h-8 w-8 text-primary" /></div>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Terms of Service</h1>
-            <p className="text-sm text-gray-500">Last updated: May 27, 2026</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Terms of Service</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Last updated: May 27, 2026</p>
           </div>
         </div>
 
-        <div className="prose prose-gray max-w-none space-y-10 text-sm leading-relaxed text-gray-700">
+        <div className="prose prose-gray dark:prose-invert max-w-none space-y-10 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
           
           {/* Overview */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6">

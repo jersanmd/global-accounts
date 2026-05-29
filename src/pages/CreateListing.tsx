@@ -37,6 +37,8 @@ export function CreateListing() {
     inventory: "",
     riskRating: "medium" as "low" | "medium" | "high" | "critical",
     listingType: "account" as ListingType,
+    stock: "",
+    title: "",
   });
 
   const [files, setFiles] = useState<File[]>([]);
@@ -59,6 +61,8 @@ export function CreateListing() {
         inventory: existingListing.inventory_summary,
         riskRating: existingListing.risk_rating,
         listingType: existingListing.listing_type ?? "account",
+        stock: existingListing.stock != null ? String(existingListing.stock) : "",
+        title: existingListing.title || "",
       });
       if (!isKnown) setCustomGame(existingListing.game);
       setExistingScreenshots(existingListing.screenshots_urls ?? []);
@@ -179,6 +183,15 @@ export function CreateListing() {
       return;
     }
 
+    // Minimum price validation
+    const price = Number(form.price);
+    const minPrice = form.listingType === "in_game_items" ? 5 : 10;
+    const typeLabel = form.listingType === "in_game_items" ? "In-game items" : "Accounts";
+    if (isNaN(price) || price < minPrice) {
+      setError(`${typeLabel} require a minimum price of $${minPrice}.`);
+      return;
+    }
+
     // Require confirmation for edits
     if (isEditing && !confirmEdit) {
       setConfirmEdit(true);
@@ -205,18 +218,22 @@ export function CreateListing() {
         urls.push(urlData.publicUrl);
       }
       const allScreenshots = [...existingScreenshots, ...urls];
+      const rank = form.rank || (form.listingType === "in_game_items" ? "N/A" : "");
+      const stock = form.listingType === "in_game_items" ? Math.max(1, Number(form.stock) || 1) : null;
 
       if (isEditing && editId) {
         // Update existing listing
         const { error: updateError } = await supabase.from("listings").update({
           game: gameName,
           platform: form.platform,
-          rank: form.rank,
+          rank,
           price_usd: Number(form.price),
           inventory_summary: form.inventory,
           risk_rating: form.riskRating,
           screenshots_urls: allScreenshots,
           listing_type: form.listingType,
+          stock,
+          title: form.title || null,
         }).eq("id", editId);
         if (updateError) throw updateError;
       } else {
@@ -225,13 +242,15 @@ export function CreateListing() {
           seller_id: profile.id,
           game: gameName,
           platform: form.platform,
-          rank: form.rank,
+          rank,
           price_usd: Number(form.price),
           inventory_summary: form.inventory,
           risk_rating: form.riskRating,
           screenshots_urls: allScreenshots,
           listing_type: form.listingType,
           status: "active",
+          stock,
+          title: form.title || null,
         });
         if (insertError) throw insertError;
       }
@@ -261,6 +280,50 @@ export function CreateListing() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border bg-white p-6 shadow-sm">
+        {/* I'm Selling — first, controls everything below */}
+        <div>
+          <label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-gray-500">I'm selling</label>
+          {isEditing ? (
+            <div className="rounded-xl border-2 border-primary bg-primary-light p-3 text-center text-primary shadow-sm">
+              <span className="text-sm font-semibold">{LISTING_TYPE_LABELS[form.listingType]}</span>
+              <span className="ml-1 text-[10px] opacity-70">{form.listingType === "account" ? "Full game account" : "Items, skins, currency"}</span>
+              <p className="mt-1 text-[10px] text-gray-400">Type cannot be changed when editing</p>
+            </div>
+          ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {(["account", "in_game_items"] as ListingType[]).map(t => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setForm({ ...form, listingType: t, rank: t === "in_game_items" ? "N/A" : form.rank })}
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-center transition-all ${
+                  form.listingType === t
+                    ? "border-primary bg-primary-light text-primary shadow-sm"
+                    : "border-gray-200 text-gray-500 hover:border-gray-300"
+                }`}
+              >
+                <span className="text-sm font-semibold">{LISTING_TYPE_LABELS[t]}</span>
+                <span className="text-[10px] opacity-70">{t === "account" ? "Full game account" : "Items, skins, currency"}</span>
+              </button>
+            ))}
+          </div>
+          )}
+        </div>
+
+        {/* Title */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Listing Title *</label>
+          <input
+            type="text"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+            placeholder={`e.g. "AR 60 Whale Account — 20x 5★ Characters" or "10,000 V-Bucks — Instant Delivery"`}
+            required
+          />
+          <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">A catchy title helps your listing stand out</p>
+        </div>
+
         {/* Game */}
         <div>
           <label className="mb-1 block text-sm font-medium">Game *</label>
@@ -351,7 +414,8 @@ export function CreateListing() {
           </select>
         </div>
 
-        {/* Rank */}
+        {/* Rank — hidden for in-game items */}
+        {form.listingType !== "in_game_items" && (
         <div>
           <label className="mb-1 block text-sm font-medium">Rank / Level</label>
           <input
@@ -363,28 +427,7 @@ export function CreateListing() {
             required
           />
         </div>
-
-        {/* Listing Type */}
-        <div>
-          <label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-gray-500">I'm selling</label>
-          <div className="grid grid-cols-2 gap-3">
-            {(["account", "in_game_items"] as ListingType[]).map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setForm({ ...form, listingType: t })}
-                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-center transition-all ${
-                  form.listingType === t
-                    ? "border-primary bg-primary-light text-primary shadow-sm"
-                    : "border-gray-200 text-gray-500 hover:border-gray-300"
-                }`}
-              >
-                <span className="text-sm font-semibold">{LISTING_TYPE_LABELS[t]}</span>
-                <span className="text-[10px] opacity-70">{t === "account" ? "Full game account" : "Items, skins, currency"}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Price */}
         <div>
@@ -392,21 +435,46 @@ export function CreateListing() {
           <input
             type="number"
             step="0.01"
-            min="1"
+            min={form.listingType === "in_game_items" ? 5 : 10}
             value={form.price}
             onChange={(e) => setForm({ ...form, price: e.target.value })}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
+            className={`w-full rounded-lg border px-3 py-2 text-sm ${form.price && Number(form.price) < (form.listingType === "in_game_items" ? 5 : 10) ? "border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-500/5" : ""}`}
             required
           />
+          <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">Min ${form.listingType === "in_game_items" ? "5" : "10"} for {form.listingType === "in_game_items" ? "in-game items" : "accounts"}</p>
+          {form.price && Number(form.price) < (form.listingType === "in_game_items" ? 5 : 10) && (
+            <p className="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400">
+              ⚠️ Price must be at least ${form.listingType === "in_game_items" ? "5" : "10"} for {form.listingType === "in_game_items" ? "in-game items" : "accounts"}
+            </p>
+          )}
         </div>
 
-        {/* Account Details */}
+        {/* Stock — only for in-game items */}
+        {form.listingType === "in_game_items" && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">Available Stock *</label>
+          <input
+            type="number"
+            min="1"
+            value={form.stock}
+            onChange={(e) => setForm({ ...form, stock: e.target.value })}
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+            placeholder="How many of this item are available?"
+            required
+          />
+          <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">Listing stays active until stock runs out</p>
+        </div>
+        )}
+
+        {/* Listing Details */}
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Account Details *
+            {form.listingType === "in_game_items" ? "Item Details" : "Account Details"} *
           </label>
           <p className="mb-2 text-xs text-gray-400">
-            Include everything a buyer needs to know — the more detail, the faster you'll sell.
+            {form.listingType === "in_game_items"
+              ? "Describe the items you're selling — include quantities, stats, and any special attributes."
+              : "Include everything a buyer needs to know — the more detail, the faster you'll sell."}
           </p>
           <textarea
             ref={detailsRef}
@@ -414,7 +482,9 @@ export function CreateListing() {
             onChange={(e) => setForm({ ...form, inventory: e.target.value })}
             rows={5}
             className="w-full resize-none overflow-hidden rounded-lg border px-3 py-2 text-sm"
-            placeholder={`Describe your account in detail:\n• Characters / champions unlocked (list the rare ones)\n• Skins, skins, or cosmetic items (count + highlight valuable ones)\n• Rank / competitive tier (current + peak)\n• In-game currency balance (primogems, VP, Riot Points, etc.)\n• Battle pass / subscription status\n• Account age & region / server\n• Any linked accounts (Steam, Google, Facebook, etc.)\n• Notable achievements, limited items, or rare collectibles
+            placeholder={form.listingType === "in_game_items"
+              ? `Describe your items in detail:\n• Item names and quantities\n• Stats, rarity, or enchantments\n• Server / region\n• Any usage restrictions or requirements`
+              : `Describe your account in detail:\n• Characters / champions unlocked (list the rare ones)\n• Skins, or cosmetic items (count + highlight valuable ones)\n• Rank / competitive tier (current + peak)\n• In-game currency balance (primogems, VP, Riot Points, etc.)\n• Battle pass / subscription status\n• Account age & region / server\n• Any linked accounts (Steam, Google, Facebook, etc.)\n• Notable achievements, limited items, or rare collectibles
 (IGNs and personal info will be hidden from the listing)`}
             required
           />
