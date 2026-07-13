@@ -1,6 +1,6 @@
 # 🛡️ RaidStore
 
-A premium gaming marketplace with middleman verification, escrow-protected payments, wallet withdrawals, and secure trading.
+A premium gaming marketplace with middleman verification, crypto payments, in-app chat, and escrow-protected trading.
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -8,45 +8,58 @@ A premium gaming marketplace with middleman verification, escrow-protected payme
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
 [![TanStack Query](https://img.shields.io/badge/TanStack_Query-5-FF4154?logo=reactquery)](https://tanstack.com/query)
-[![Tests](https://img.shields.io/badge/Tests-116_passing-10B981?logo=vitest)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Tests-passing-10B981?logo=vitest)](https://vitest.dev/)
 
 ## ✨ Features
+
+### 💎 Crypto Payments
+| Feature | Description |
+|---|---|
+| 🪙 **138 Coins** | BTC, ETH, USDC, USDT, SOL, and 130+ more across 4 networks |
+| 🔗 **Multi-Network** | Ethereum, BSC, TRON, Klaytn with auto-detection |
+| 🏦 **Binance Rails** | Direct wallet-to-wallet deposits via Binance addresses |
+| 🔍 **Blockchain Verification** | Etherscan/BscScan/TronGrid/KlaytnScope tx verification |
+| 📋 **Binance-Style UI** | 3-step deposit: Select Coin → Network → Deposit |
+
+### 💬 In-App Chat (Facebook-Style)
+| Feature | Description |
+|---|---|
+| 💬 **Direct Messages** | Buyer ↔ Seller, Seller ↔ Seller with real-time messaging |
+| 👥 **Group Chats** | Middleman creates group with buyer + seller per transaction |
+| 🏷️ **Role Badges** | [SELLER], [ADMIN], [MIDDLEMAN] visible in chat UI |
+| 🎨 **Premium UI** | Gradient headers, animations, avatars, consistent sizing |
+| ⚡ **Supabase Realtime** | Instant message delivery via Postgres changes |
 
 ### 🛒 Marketplace
 | Feature | Description |
 |---|---|
-| 🎮 **Browse & Search** | 28 supported games. Filter by game, platform, risk rating, price range, listing type |
-| 🛡️ **Middleman Verification** | Live middlemen verify account transfers in private Discord channels |
-| 💳 **Escrow Payments** | Stripe payments held in escrow, released to seller wallet on completion |
+| 🎮 **Browse & Search** | Filter by game, platform, risk rating, price range, listing type |
+| 🛡️ **Middleman Verification** | Live middlemen verify trades in group chats |
+| 💳 **Escrow Payments** | Crypto payments secured by middleman escrow |
 | 📸 **Screenshots** | Up to 15 screenshots per listing with lightbox viewer |
-| 🏷️ **Dynamic Categories** | Game names + emoji icons auto-populate from existing listings |
-| 🔽 **Smooth Scroll** | Click a game pill in the hero to scroll directly to listings |
 
-### 📊 Seller Finance Dashboard
+### 📊 Seller Dashboard
 | Feature | Description |
 |---|---|
 | 💰 **Revenue KPI** | Month/Year/All toggle for gross sales tracking |
-| ✅ **Released KPI** | Net earnings (92%) with escrow badge for pending funds |
+| ✅ **Released KPI** | Net earnings with escrow badge for pending funds |
 | 🏦 **Wallet KPI** | Withdrawable balance with direct link to earnings |
-| 📋 **Sales Table** | Proper data table with Transaction, Date, Status, Fee, Amount columns |
-| 📦 **My Listings** | Compact card view with edit/delete, View All → full management page |
-| 🔍 **Filter Chips** | Quick All / Completed / Pending toggles with live counts |
+| 📦 **My Listings** | Compact card view with edit/delete, stock tracking |
 
 ### 💵 Wallet & Withdrawals
 | Feature | Description |
 |---|---|
 | 🏦 **Wallet Balance** | Real-time balance from immutable ledger |
-| 📤 **Withdraw** | Select sales → choose GCash/Maya/Bank Transfer → confirm |
-| 📜 **Withdrawal History** | Expandable batches showing each sale within a withdrawal |
-| 🔒 **Server-Side Validation** | RPC validates `auth.uid()`, row locks prevent double-withdrawal, amounts from DB not frontend |
+| 📤 **Withdraw** | Select sales → choose payment method → confirm |
+| 📜 **Withdrawal History** | Expandable batches showing each sale |
 
 ### 👥 Role-Based Dashboards
 | Role | Features |
 |---|---|
-| 👤 **Buyer** | Purchase carousel, quick links, transaction history |
-| 💰 **Seller** | Finance KPIs, listings management, sales table, wallet, withdrawal history |
-| ⚖️ **Middleman** | Active/History queue, Discord channel creation, step-by-step verification |
-| 🛡️ **Admin** | User management, transaction editing, listing control, delete with RPC fallback |
+| 👤 **Buyer** | Browse, purchase, chat, transaction history |
+| 💰 **Seller** | Finance KPIs, listings, sales, wallet, withdrawals |
+| ⚖️ **Middleman** | Queue, group chat creation, step-by-step verification |
+| 🛡️ **Admin** | User management, transaction editing, listing control |
 
 ### 🎨 Platform
 | Feature | Description |

@@ -34,11 +34,14 @@ serve(async (req: Request) => {
 
     // If not test mode, verify via block explorers
     if (!test) {
-      const ethAddr = Deno.env.get("PLATFORM_USDC_ADDRESS") ?? "0x541e5d5142c536f3ecbb166b2355c9a3c9141ead";
-      const bscAddr = Deno.env.get("PLATFORM_BSC_ADDRESS") ?? "0x541e5d5142c536f3ecbb166b2355c9a3c9141ead";
-      const tronAddr = Deno.env.get("PLATFORM_TRON_ADDRESS") ?? "TAC372pngAay91sm1YapNhf7nh9h1JdY3y";
-      const klaytnAddr = Deno.env.get("PLATFORM_KLAYTN_ADDRESS") ?? "0x541e5d5142c536f3ecbb166b2355c9a3c9141ead";
-      const etherscanKey = Deno.env.get("ETHERSCAN_API_KEY") || "5E36E3SNFN8BPZ444KS6K1PJD1H3DGXKI6";
+      const ethAddr = Deno.env.get("PLATFORM_USDC_ADDRESS") ?? "";
+      const bscAddr = Deno.env.get("PLATFORM_BSC_ADDRESS") ?? "";
+      const tronAddr = Deno.env.get("PLATFORM_TRON_ADDRESS") ?? "";
+      const klaytnAddr = Deno.env.get("PLATFORM_KLAYTN_ADDRESS") ?? "";
+      const etherscanKey = Deno.env.get("ETHERSCAN_API_KEY") ?? "";
+      if (!etherscanKey) {
+        return json({ verified: false, error: "Etherscan API key not configured" }, 500);
+      }
 
       let verified = false;
       // Try Etherscan
